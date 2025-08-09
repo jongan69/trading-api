@@ -81,6 +81,15 @@ The Medallion Fund’s exceptional track record (average annual returns exceedin
 
 These ideas motivate our composite metric for short‑term, risk‑aware capital allocation.
 
+## Metrics & Scoring
+- Implemented in `src/metrics.rs`:
+  - Sharpe Ratio (annualized), Sortino Ratio (annualized), Calmar Ratio, Kelly fraction (clamped 0..1)
+  - Downside deviation, volatility, CAGR, max drawdown
+- Composite score = `w_sharpe*Sharpe + w_sortino*Sortino + w_calmar*Calmar`
+- Options score ~ `UnderlyingComposite * Delta * (Spot / Premium) / (1 + DTE/30)`
+  - Filters can exclude contracts by liquidity, spread, moneyness, delta, DTE, etc.
+
+
 ## Requirements
 - Rust toolchain (1.75+ recommended)
 - macOS/Linux/Windows
@@ -222,23 +231,6 @@ curl "http://localhost:3000/options/recommendations?side=both&min_dte=7&max_dte=
 ```bash
 curl "http://localhost:3000/options/recommendations?symbols=AAPL,MSFT,NVDA&side=call&min_delta=0.2&max_delta=0.6&max_spread_pct=0.1&per_symbol_limit=10&range=6mo&interval=1d&sharpe_w=0.5&sortino_w=0.4&calmar_w=0.1&limit=40"
 ```
-
-### 🧠 Philosophical Influence: The Medallion Fund
-
-The Medallion Fund’s exceptional track record (average annual returns exceeding 66% before fees) inspires a scientific, probabilistic, and risk‑managed framework:
-- Position sizing optimized probabilistically (Kelly‑like)
-- Short holding periods with asymmetric risk (Sortino‑like)
-- Aggressive drawdown control and capital preservation (Calmar‑like)
-
-These ideas motivate our composite metric for short‑term, risk‑aware capital allocation.
-
-## Metrics & Scoring
-- Implemented in `src/metrics.rs`:
-  - Sharpe Ratio (annualized), Sortino Ratio (annualized), Calmar Ratio, Kelly fraction (clamped 0..1)
-  - Downside deviation, volatility, CAGR, max drawdown
-- Composite score = `w_sharpe*Sharpe + w_sortino*Sortino + w_calmar*Calmar`
-- Options score ~ `UnderlyingComposite * Delta * (Spot / Premium) / (1 + DTE/30)`
-  - Filters can exclude contracts by liquidity, spread, moneyness, delta, DTE, etc.
 
 ## Notes & Disclaimers
 - Yahoo options data is fetched from the unofficial options JSON. This may change or rate-limit unexpectedly.
