@@ -26,16 +26,18 @@ use time::{Duration, OffsetDateTime};
 use yahoo_finance_api::YahooConnector;
 use futures::future::join_all;
 use reqwest::Client;
+use utoipa::{OpenApi, ToSchema, IntoParams};
+use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
 struct AppState;
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 struct HealthResponse {
     status: &'static str,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 struct ErrorResponse {
     error: String,
 }
@@ -43,6 +45,8 @@ struct ErrorResponse {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = AppState;
+
+    let openapi = ApiDoc::openapi();
 
     let app = Router::new()
         .route("/health", get(health))
@@ -58,6 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/screener/candidates", get(get_screener_candidates))
         .route("/recommendations/finviz", get(get_recommendations_finviz))
         .route("/options/recommendations", get(get_options_recommendations))
+        .merge(SwaggerUi::new("/docs").url("/openapi.json", openapi))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
@@ -67,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 // removed unused POST body types to keep GET-only API clean
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 struct YahooQuery {
     symbols: Option<String>, // comma-separated symbols
     range: Option<String>,   // e.g., 1mo, 3mo, 6mo, 1y
@@ -100,6 +105,7 @@ async fn fetch_prices_for_symbol(symbol: &str, range: &str, _interval: &str) -> 
     Ok(quotes.into_iter().map(|q| q.close).collect())
 }
 
+#[utoipa::path(get, path = "/recommendations/yahoo", params(YahooQuery), tag = "data", responses((status = 200, description = "Recommendations for symbols")))]
 async fn get_recommendations_yahoo(Query(q): Query<YahooQuery>) -> impl IntoResponse {
     let period_label = q.range.as_deref().unwrap_or("3mo");
     let interval = q.interval.as_deref().unwrap_or("1d");
@@ -147,12 +153,13 @@ async fn get_recommendations_yahoo(Query(q): Query<YahooQuery>) -> impl IntoResp
     (StatusCode::OK, Json(json!({ "results": results }))).into_response()
 }
 
+#[utoipa::path(get, path = "/health", tag = "system", responses((status = 200, description = "Service health", body = HealthResponse)))]
 async fn health() -> impl IntoResponse {
     let body = HealthResponse { status: "ok" };
     (StatusCode::OK, Json(body))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 struct LimitQuery {
     limit: Option<usize>,
 }
@@ -177,7 +184,9 @@ fn map_rows_to_objects(headers: Vec<String>, mut rows: Vec<Vec<String>>, limit: 
         .collect()
 }
 
-async fn get_news(State(_): State<AppState>, Query(LimitQuery { limit }): Query<LimitQuery>) -> impl IntoResponse {
+#[utoipa::path(get, path = "/news", params(LimitQuery), tag = "data", responses((status = 200, description = "Latest Finviz news")))]
+async fn get_news(_state: State<AppState>, Query(query): Query<LimitQuery>) -> impl IntoResponse {
+    let LimitQuery { limit } = query;
     match News::default().scrape().await {
         Ok(result) => (
             StatusCode::OK,
@@ -199,7 +208,9 @@ async fn get_news(State(_): State<AppState>, Query(LimitQuery { limit }): Query<
     }
 }
 
-async fn get_forex(State(_): State<AppState>, Query(LimitQuery { limit }): Query<LimitQuery>) -> impl IntoResponse {
+#[utoipa::path(get, path = "/forex", params(LimitQuery), tag = "data", responses((status = 200, description = "Forex performance")))]
+async fn get_forex(_state: State<AppState>, Query(query): Query<LimitQuery>) -> impl IntoResponse {
+    let LimitQuery { limit } = query;
     match Forex::default().scrape().await {
         Ok(rows) => {
             let headers: Vec<String> = Forex::default_header().into_iter().map(|s| s.to_string()).collect();
@@ -214,7 +225,9 @@ async fn get_forex(State(_): State<AppState>, Query(LimitQuery { limit }): Query
     }
 }
 
-async fn get_crypto(State(_): State<AppState>, Query(LimitQuery { limit }): Query<LimitQuery>) -> impl IntoResponse {
+#[utoipa::path(get, path = "/crypto", params(LimitQuery), tag = "data", responses((status = 200, description = "Crypto performance")))]
+async fn get_crypto(_state: State<AppState>, Query(query): Query<LimitQuery>) -> impl IntoResponse {
+    let LimitQuery { limit } = query;
     match Crypto::default().scrape().await {
         Ok(rows) => {
             let headers: Vec<String> = Crypto::default_header().into_iter().map(|s| s.to_string()).collect();
@@ -229,7 +242,9 @@ async fn get_crypto(State(_): State<AppState>, Query(LimitQuery { limit }): Quer
     }
 }
 
-async fn get_future(State(_): State<AppState>, Query(LimitQuery { limit }): Query<LimitQuery>) -> impl IntoResponse {
+#[utoipa::path(get, path = "/future", params(LimitQuery), tag = "data", responses((status = 200, description = "Futures performance")))]
+async fn get_future(_state: State<AppState>, Query(query): Query<LimitQuery>) -> impl IntoResponse {
+    let LimitQuery { limit } = query;
     match Future::default().scrape().await {
         Ok(rows) => {
             let headers: Vec<String> = Future::default_header().into_iter().map(|s| s.to_string()).collect();
@@ -244,7 +259,9 @@ async fn get_future(State(_): State<AppState>, Query(LimitQuery { limit }): Quer
     }
 }
 
-async fn get_insider(State(_): State<AppState>, Query(LimitQuery { limit }): Query<LimitQuery>) -> impl IntoResponse {
+#[utoipa::path(get, path = "/insider", params(LimitQuery), tag = "data", responses((status = 200, description = "Insider transactions")))]
+async fn get_insider(_state: State<AppState>, Query(query): Query<LimitQuery>) -> impl IntoResponse {
+    let LimitQuery { limit } = query;
     match Insider::default().scrape().await {
         Ok(rows) => {
             let headers: Vec<String> = Insider::default_header().into_iter().map(|s| s.to_string()).collect();
@@ -259,7 +276,9 @@ async fn get_insider(State(_): State<AppState>, Query(LimitQuery { limit }): Que
     }
 }
 
-async fn get_group(State(_): State<AppState>, Query(LimitQuery { limit }): Query<LimitQuery>) -> impl IntoResponse {
+#[utoipa::path(get, path = "/group", params(LimitQuery), tag = "data", responses((status = 200, description = "Group/Industry")))]
+async fn get_group(_state: State<AppState>, Query(query): Query<LimitQuery>) -> impl IntoResponse {
+    let LimitQuery { limit } = query;
     let group = Group::new(
         GroupBy::Industry,
         GroupType::Valuation,
@@ -296,6 +315,7 @@ async fn get_group(State(_): State<AppState>, Query(LimitQuery { limit }): Query
 }
 
 // ---- Yahoo metrics and rank (GET) ----
+#[utoipa::path(get, path = "/metrics/yahoo", params(YahooQuery), tag = "data", responses((status = 200, description = "Metrics for single symbol")))]
 async fn get_metrics_yahoo(Query(q): Query<YahooQuery>) -> impl IntoResponse {
     let period_label = q.range.as_deref().unwrap_or("3mo");
     let interval = q.interval.as_deref().unwrap_or("1d");
@@ -337,6 +357,7 @@ async fn get_metrics_yahoo(Query(q): Query<YahooQuery>) -> impl IntoResponse {
     }
 }
 
+#[utoipa::path(get, path = "/rank/yahoo", params(YahooQuery), tag = "data", responses((status = 200, description = "Rank multiple symbols")))]
 async fn get_rank_yahoo(Query(q): Query<YahooQuery>) -> impl IntoResponse {
     let period_label = q.range.as_deref().unwrap_or("3mo");
     let interval = q.interval.as_deref().unwrap_or("1d");
@@ -385,7 +406,7 @@ async fn get_rank_yahoo(Query(q): Query<YahooQuery>) -> impl IntoResponse {
 }
 
 // ---- Finviz screener candidates and recommendations ----
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 struct ScreenerQuery {
     signal: Option<String>,   // e.g., TopGainers, TopLosers, NewHigh
     order: Option<String>,    // e.g., Price, MarketCap
@@ -420,6 +441,7 @@ fn parse_screener(s: &str) -> ScreenerType {
     }
 }
 
+#[utoipa::path(get, path = "/screener/candidates", params(ScreenerQuery), tag = "data", responses((status = 200, description = "Finviz screener candidates")))]
 async fn get_screener_candidates(Query(q): Query<ScreenerQuery>) -> impl IntoResponse {
     let signal = q.signal.as_deref().unwrap_or("TopGainers");
     let order = q.order.as_deref().unwrap_or("Price");
@@ -447,7 +469,7 @@ async fn get_screener_candidates(Query(q): Query<ScreenerQuery>) -> impl IntoRes
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 struct FinvizRecommendationsQuery {
     signal: Option<String>,
     order: Option<String>,
@@ -461,6 +483,7 @@ struct FinvizRecommendationsQuery {
     periods_per_year: Option<usize>,
 }
 
+#[utoipa::path(get, path = "/recommendations/finviz", params(FinvizRecommendationsQuery), tag = "data", responses((status = 200, description = "Evaluate candidates & rank")))]
 async fn get_recommendations_finviz(Query(q): Query<FinvizRecommendationsQuery>) -> impl IntoResponse {
     let signal = q.signal.as_deref().unwrap_or("TopGainers");
     let order = q.order.as_deref().unwrap_or("Price");
@@ -519,7 +542,7 @@ async fn get_recommendations_finviz(Query(q): Query<FinvizRecommendationsQuery>)
 }
 
 // ---- Yahoo options recommendations ----
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 struct OptionsQuery {
     symbol: Option<String>,
     symbols: Option<String>,
@@ -552,6 +575,40 @@ struct OptionsQuery {
     per_symbol_limit: Option<usize>,
     max_spread_pct: Option<f64>,
 }
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        health,
+        get_news,
+        get_forex,
+        get_crypto,
+        get_future,
+        get_insider,
+        get_group,
+        get_metrics_yahoo,
+        get_rank_yahoo,
+        get_recommendations_yahoo,
+        get_screener_candidates,
+        get_recommendations_finviz,
+        get_options_recommendations,
+    ),
+    components(schemas(
+        HealthResponse,
+        ErrorResponse,
+        LimitQuery,
+        YahooQuery,
+        ScreenerQuery,
+        FinvizRecommendationsQuery,
+        OptionsQuery,
+    )),
+    tags(
+        (name = "system", description = "Health & meta"),
+        (name = "data", description = "Market data from Finviz & Yahoo"),
+        (name = "options", description = "Options recommendations")
+    )
+)]
+struct ApiDoc;
 
 fn black_scholes_delta(spot: f64, strike: f64, r: f64, sigma: f64, t_years: f64, is_call: bool) -> Option<f64> {
     if spot <= 0.0 || strike <= 0.0 || sigma <= 0.0 || t_years <= 0.0 {
@@ -592,6 +649,7 @@ async fn fetch_options_chain(symbol: &str) -> Result<Value, String> {
     Ok(v)
 }
 
+#[utoipa::path(get, path = "/options/recommendations", params(OptionsQuery), tag = "options", responses((status = 200, description = "Rank options contracts")))]
 async fn get_options_recommendations(Query(q): Query<OptionsQuery>) -> impl IntoResponse {
     let side = q.side.unwrap_or_else(|| "both".to_string());
     let min_dte = q.min_dte.unwrap_or(7);
