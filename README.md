@@ -3,12 +3,32 @@
 A lightweight HTTP API for sourcing market data and generating trading recommendations. It combines Finviz screening with Yahoo Finance historical and options data, then ranks assets/options using a composite of Kelly-inspired position sizing with Sharpe, Sortino, and Calmar risk-adjusted metrics.
 
 ## Highlights
-- GET-only REST API built with Axum + Tokio
+- Axum + Tokio: GET-only REST API with modular routes/services
 - Data sources:
   - Finviz via `finviz_rs` (screeners, news, groups, etc.)
   - Yahoo Finance via `yahoo_finance_api` (historical quotes) and options JSON endpoint
-- Metrics engine (`src/metrics.rs`): Sharpe, Sortino, Calmar, Kelly fraction, composite score
-- Dynamic options recommendations without specifying symbols (auto-sources tickers from Finviz)
+- Metrics engine: `src/helpers/metrics.rs` (Sharpe, Sortino, Calmar, Kelly, composite score)
+- Options recommendations: dynamic ranking with auto-sourced symbols (Finviz or Yahoo lists)
+- OpenAPI + Swagger UI: browse docs at `/docs` (served from `/openapi.json`)
+- Observability: `tracing` + `tower-http` request logging (enable via `RUST_LOG`)
+
+## Environment
+Create a `.env` file (or export variables) for providers that require auth:
+
+```
+# Server
+PORT=3000
+
+# Alpaca (either ALPACA_* or APCA_* are accepted)
+ALPACA_API_KEY_ID=your_key
+ALPACA_API_SECRET_KEY=your_secret
+# or
+APCA_API_KEY_ID=your_key
+APCA_API_SECRET_KEY=your_secret
+
+# Logging (optional)
+RUST_LOG=info,tower_http=info
+```
 
 ## 📐 Background: Key Formulas
 
@@ -82,7 +102,7 @@ The Medallion Fund’s exceptional track record (average annual returns exceedin
 These ideas motivate our composite metric for short‑term, risk‑aware capital allocation.
 
 ## Metrics & Scoring
-- Implemented in `src/metrics.rs`:
+- Implemented in `src/helpers/metrics.rs`:
   - Sharpe Ratio (annualized), Sortino Ratio (annualized), Calmar Ratio, Kelly fraction (clamped 0..1)
   - Downside deviation, volatility, CAGR, max drawdown
 - Composite score = `w_sharpe*Sharpe + w_sortino*Sortino + w_calmar*Calmar`
@@ -103,6 +123,19 @@ cargo build
 cargo run
 ```
 
+## Testing
+- Quick compile/unit tests:
+  ```bash
+  cargo test
+  ```
+- End-to-end (live network) tests for every endpoint:
+  ```bash
+  RUN_E2E=1 cargo test --tests
+  ```
+  - Spawns the server on an ephemeral port using `build_app` from `src/lib.rs` and hits all routes with `reqwest`.
+  - Requires internet; may be rate‑limited by providers. Keep `limit` params small.
+  - Alpaca keys are optional; options tests fall back to Yahoo when missing.
+
 ## Endpoints
 All endpoints are GET.
 
@@ -115,7 +148,7 @@ All endpoints are GET.
 - Query: `limit?` (int)
 - Example:
 ```bash
-curl "http://localhost:3000/news?limit=5"
+curl "http://localhost:3000/news"
 ```
 
 ### Finviz: Forex
@@ -240,9 +273,26 @@ curl "http://localhost:3000/options/recommendations?symbols=AAPL,MSFT,NVDA&side=
 ## Project Structure
 ```
 src/
-  main.rs        # axum routes and handlers
-  metrics.rs     # metrics engine (Sharpe, Sortino, Calmar, Kelly, composites)
-Cargo.toml       # dependencies
+  main.rs            # bootstrap: compose routers, state, tracing, Swagger
+  state.rs           # AppState: shared clients and concurrency
+  types.rs           # request/response DTOs (serde + utoipa schemas)
+  errors.rs          # ApiError (IntoResponse)
+  routes/            # HTTP layer (handlers only)
+    system.rs        # /health
+    data.rs          # /news, /forex, /crypto, /future, /insider, /group, /reddit/stocks, /trending/stocks
+    yahoo.rs         # /metrics/yahoo, /rank/yahoo, /recommendations/yahoo
+    options.rs       # /options/recommendations
+  services/          # business logic
+    yahoo.rs         # price fetch, latest close, metrics helpers
+  sources/           # external data clients
+    finviz_data.rs   # Finviz screeners/news/groups
+    yahoo_data.rs    # Yahoo options JSON + trending/predefined lists
+    reddit_data.rs   # Reddit trending tickers
+    alpaca_data.rs   # Alpaca news & options snapshots
+  helpers/           # pure utilities
+    metrics.rs       # Sharpe, Sortino, Calmar, Kelly, composite
+    options.rs       # Black‑Scholes delta
+    params.rs        # intervals, CSV parsing
 ```
 
 ## Contributing
@@ -254,5 +304,6 @@ Cargo.toml       # dependencies
 
 ## Troubleshooting
 - Build issues: ensure a recent Rust toolchain and run `cargo clean && cargo build`.
-- Network errors: Yahoo/Finviz endpoints may rate-limit; backoff and try again.
-- macOS OpenSSL issues: `reqwest` is configured with `rustls-tls` to avoid system OpenSSL dependencies.
+- Docs missing: confirm the app merged Swagger UI and visit `/docs`.
+- Network errors: Yahoo/Finviz endpoints may rate‑limit; backoff and try again.
+- macOS OpenSSL issues: `reqwest` uses `rustls-tls` to avoid system OpenSSL dependencies.
