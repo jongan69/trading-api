@@ -223,66 +223,6 @@ curl "http://localhost:3000/options/recommendations?side=both&min_dte=7&max_dte=
 curl "http://localhost:3000/options/recommendations?symbols=AAPL,MSFT,NVDA&side=call&min_delta=0.2&max_delta=0.6&max_spread_pct=0.1&per_symbol_limit=10&range=6mo&interval=1d&sharpe_w=0.5&sortino_w=0.4&calmar_w=0.1&limit=40"
 ```
 
-## 📐 Background: Key Formulas
-
-In quantitative finance, measuring risk-adjusted return is fundamental. Several established ratios offer complementary lenses on volatility, drawdown, and return dynamics. Our approach draws on the Kelly Criterion, the Calmar Ratio, and the Sortino Ratio, while taking inspiration from the Medallion Fund’s emphasis on probabilistic, risk-managed trading.
-
-### 1. Kelly Criterion
-
-The Kelly Criterion determines the optimal fraction of capital to allocate to a trade to maximize long-term growth:
-
-```math
-f^* = \frac{\mu - r}{\sigma^2}
-```
-
-Where:
-- \(f^*\): optimal fraction of capital to wager
-- \(\mu\): expected return per period
-- \(r\): risk‑free rate per period
-- \(\sigma^2\): variance of returns per period
-
-For assets with a known expected return \(\mu\) and variance \(\sigma^2\), a continuous form often used is:
-
-```math
-f^* = \frac{\mu}{\sigma^2}
-```
-
-This connects closely to the Sharpe Ratio.
-
-### 2. Sharpe Ratio
-
-Measures excess return per unit of total volatility:
-
-```math
-\text{Sharpe} = \frac{R_p - R_f}{\sigma_p}
-```
-
-Where \(R_p\) is portfolio return, \(R_f\) the risk‑free rate, and \(\sigma_p\) the standard deviation of returns. Sharpe treats upside and downside volatility symmetrically.
-
-### 3. Sortino Ratio
-
-Focuses on downside risk only:
-
-```math
-\text{Sortino} = \frac{R_p - R_f}{\sigma_D}
-```
-
-with downside deviation \(\sigma_D\):
-
-\[\sigma_D = \sqrt{\frac{1}{N} \sum_{i=1}^{N} \min\big(0,\; R_i - T\big)^2}\]
-
-Where \(T\) is a target return (e.g., 0 or a benchmark). Sortino better captures asymmetric risk.
-
-### 4. Calmar Ratio
-
-Emphasizes drawdown risk, useful for trend‑following or short‑term systems:
-
-```math
-\text{Calmar} = \frac{\text{CAGR}}{\text{Max Drawdown}}
-```
-
-Where CAGR is compound annual growth rate and Max Drawdown is the peak‑to‑trough loss.
-
 ### 🧠 Philosophical Influence: The Medallion Fund
 
 The Medallion Fund’s exceptional track record (average annual returns exceeding 66% before fees) inspires a scientific, probabilistic, and risk‑managed framework:
