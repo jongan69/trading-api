@@ -11,11 +11,13 @@ pub mod middleware;
 pub mod utils;
 
 use axum::Router;
+use axum::middleware::from_fn;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 use tower_http::trace::TraceLayer;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
+use crate::middleware::cors_middleware;
 
 #[derive(OpenApi)]
 #[openapi(
@@ -151,6 +153,7 @@ pub fn build_app(state: state::AppState) -> Router {
         .route("/screener/candidates", axum::routing::get(crate::sources::finviz_data::get_screener_candidates))
         .route("/recommendations/finviz", axum::routing::get(crate::sources::finviz_data::get_recommendations_finviz))
         .merge(SwaggerUi::new("/docs").url("/openapi.json", openapi))
+        .layer(from_fn(cors_middleware))
         .layer(TraceLayer::new_for_http())
 }
 
