@@ -35,7 +35,7 @@ pub struct HighOpenInterestResponse {
         (status = 400, description = "Bad request", body = crate::types::ErrorResponse),
         (status = 500, description = "Internal server error", body = crate::types::ErrorResponse)
     ),
-    tag = "High Open Interest"
+    tag = "high-open-interest"
 )]
 pub async fn get_high_open_interest_handler(
     Path(ticker): Path<String>,
@@ -64,7 +64,7 @@ pub async fn get_high_open_interest_handler(
         (status = 400, description = "Bad request", body = crate::types::ErrorResponse),
         (status = 500, description = "Internal server error", body = crate::types::ErrorResponse)
     ),
-    tag = "High Open Interest"
+    tag = "high-open-interest"
 )]
 pub async fn get_high_open_interest_batch_handler(
     Query(query): Query<HighOpenInterestBatchQuery>,

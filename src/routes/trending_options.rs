@@ -63,7 +63,7 @@ pub struct TrendingOptionsSummary {
         (status = 400, description = "Bad request", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
     ),
-    tag = "Trending Options"
+    tag = "trending-options"
 )]
 pub async fn get_trending_options_handler(
     State(state): State<AppState>,

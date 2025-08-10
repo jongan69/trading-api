@@ -92,9 +92,8 @@ use tower_http::trace::TraceLayer;
         (name = "data", description = "Aggregated market data from Finviz, Reddit, Yahoo,and Alpaca"),
         (name = "options", description = "Options recommendations"),
         (name = "kraken", description = "Kraken cryptocurrency exchange data"),
-        (name = "coingecko", description = "CoinGecko cryptocurrency market data"),
-        (name = "High Open Interest", description = "High open interest option contracts from Alpaca"),
-        (name = "Trending Options", description = "Trending tickers with undervalued options analysis")
+        (name = "high-open-interest", description = "High open interest option contracts from Alpaca"),
+        (name = "trending-options", description = "Trending tickers with undervalued options analysis")
     )
 )]
 struct ApiDoc;
