@@ -106,6 +106,6 @@ pub struct HighOpenInterestBatchQuery {
 
 pub fn router() -> Router {
     Router::new()
-        .route("/high-open-interest/:ticker", get(get_high_open_interest_handler))
+        .route("/high-open-interest/{ticker}", get(get_high_open_interest_handler))
         .route("/high-open-interest/batch", get(get_high_open_interest_batch_handler))
 }
