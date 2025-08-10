@@ -13,18 +13,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
+    // Load configuration
+    let config = trading_api::config::Config::from_env()
+        .map_err(|e| format!("Configuration error: {e}"))?;
+
     let state = AppState {
         http: Client::new(),
         yahoo: std::sync::Arc::new(YahooConnector::new()?),
         concurrency_options: std::sync::Arc::new(tokio::sync::Semaphore::new(8)),
+        config: std::sync::Arc::new(config),
     };
 
+    let port = state.config.server.port;
+    let host = state.config.server.host.clone();
+    
     let app = trading_api::build_app(state);
 
-    let port: u16 = std::env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(3000);
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    println!("listening on http://0.0.0.0:{}", port);
+    println!("listening on http://{host}:{port}");
     axum::serve(listener, app).await?;
     Ok(())
 }

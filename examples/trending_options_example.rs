@@ -10,11 +10,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("=== Trending Options Analysis Example ===\n");
 
+    // Load configuration
+    let config = trading_api::config::Config::from_env()
+        .unwrap_or_default();
+
     // Create app state
     let state = AppState {
         http: reqwest::Client::new(),
         yahoo: std::sync::Arc::new(YahooConnector::new()?),
         concurrency_options: std::sync::Arc::new(tokio::sync::Semaphore::new(8)),
+        config: std::sync::Arc::new(config),
     };
 
     // Configure analysis parameters
@@ -69,8 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let open_interest = contract.get("open_interest").and_then(|oi| oi.as_u64()).unwrap_or(0);
                     let last_price = contract.get("last_price").and_then(|p| p.as_f64()).unwrap_or(0.0);
                     
-                    println!("   {}: Strike ${:.2}, Exp: {}, OI: {}, Price: ${:.2}, Score: {:.3}", 
-                        contract_type, strike, expiration, open_interest, last_price, option_score);
+                    println!("   {contract_type}: Strike ${strike:.2}, Exp: {expiration}, OI: {open_interest}, Price: ${last_price:.2}, Score: {option_score:.3}");
                 }
 
                 // Show undervalued indicators
@@ -81,8 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let is_liquid = indicators.get("is_liquid").and_then(|l| l.as_bool()).unwrap_or(false);
                     let is_tight_spread = indicators.get("is_tight_spread").and_then(|s| s.as_bool()).unwrap_or(false);
                     
-                    println!("      Undervalued Score: {:.3} (Liquidity: {:.3}, Spread: {:.3}, Liquid: {}, Tight Spread: {})", 
-                        overall_score, liquidity_score, spread_score, is_liquid, is_tight_spread);
+                    println!("      Undervalued Score: {overall_score:.3} (Liquidity: {liquidity_score:.3}, Spread: {spread_score:.3}, Liquid: {is_liquid}, Tight Spread: {is_tight_spread})");
                 }
             }
         }
@@ -122,8 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let expiration = contract.get("expiration_date").and_then(|e| e.as_str()).unwrap_or("Unknown");
                     let open_interest = contract.get("open_interest").and_then(|oi| oi.as_u64()).unwrap_or(0);
                     
-                    println!("   {}: Strike ${:.2}, Exp: {}, OI: {}, Score: {:.3}", 
-                        contract_type, strike, expiration, open_interest, option_score);
+                    println!("   {contract_type}: Strike ${strike:.2}, Exp: {expiration}, OI: {open_interest}, Score: {option_score:.3}");
                 }
             }
         }

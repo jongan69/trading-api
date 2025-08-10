@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
         }
-        Err(e) => println!("   Error: {}", e),
+        Err(e) => println!("   Error: {e}"),
     }
 
     println!();
@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
         }
-        Err(e) => println!("   Error: {}", e),
+        Err(e) => println!("   Error: {e}"),
     }
 
     println!();
@@ -60,7 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
         }
-        Err(e) => println!("   Error: {}", e),
+        Err(e) => println!("   Error: {e}"),
     }
 
     println!();
@@ -70,15 +70,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match get_trending_coins().await {
         Ok(trending) => {
             for (i, coin) in trending.iter().enumerate() {
-                println!("   {}. {} ({}): Score {}", 
+                println!("   {}. {} ({}): Score {} | Source: {}", 
                     i + 1, 
-                    coin.item.name, 
-                    coin.item.symbol.to_uppercase(),
-                    coin.item.score
+                    coin.name, 
+                    coin.symbol.to_uppercase(),
+                    coin.score.unwrap_or(0.0),
+                    coin.source
                 );
             }
         }
-        Err(e) => println!("   Error: {}", e),
+        Err(e) => println!("   Error: {e}"),
     }
 
     println!();
@@ -91,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("   24h Trading Volume: ${:.0}", overview.total_volume);
             println!("   Bitcoin Dominance: {:.2}%", overview.bitcoin_dominance);
         }
-        Err(e) => println!("   Error: {}", e),
+        Err(e) => println!("   Error: {e}"),
     }
 
     println!();
@@ -103,7 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("   {}", context.lines().next().unwrap_or("No context available"));
             println!("   ... (truncated for display)");
         }
-        Err(e) => println!("   Error: {}", e),
+        Err(e) => println!("   Error: {e}"),
     }
 
     println!();
@@ -117,7 +118,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(data) => {
             println!("   {}", serde_json::to_string_pretty(&data).unwrap());
         }
-        Err(e) => println!("   Error: {}", e),
+        Err(e) => println!("   Error: {e}"),
     }
 
     println!();
@@ -137,7 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
         }
-        Err(e) => println!("   Error: {}", e),
+        Err(e) => println!("   Error: {e}"),
     }
 
     println!("\n✅ CoinGecko example completed!");

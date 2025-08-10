@@ -42,10 +42,14 @@ The Kraken integration provides access to real-time cryptocurrency market data t
 Get ticker information for specified pairs.
 
 **Query Parameters:**
-- `pairs` (optional): Comma-separated list of trading pairs (default: XBT/USD, ETH/USD)
+- `pairs` (optional): Comma-separated list of trading pairs. If not provided, returns data for popular default pairs (XXBTZUSD, XETHZUSD, XXBTZEUR, XETHZEUR, ADAUSD, DOTUSD, LINKUSD, LTCUSD)
 
-**Example:**
+**Examples:**
 ```bash
+# Get default popular pairs
+curl "http://localhost:3000/kraken/ticker"
+
+# Get specific pairs
 curl "http://localhost:3000/kraken/ticker?pairs=XBT/USD,ETH/USD"
 ```
 

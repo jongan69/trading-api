@@ -11,33 +11,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // Get system status
     println!("📊 System Status:");
-    let status = tokio::task::spawn_blocking(|| {
-        let data_source = KrakenDataSource::new()?;
-        data_source.get_system_status()
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))??;
-    println!("{:?}\n", status);
+    let data_source = KrakenDataSource::new_async().await?;
+    let status = data_source.get_system_status()?;
+    println!("{status:?}\n");
 
     // Get server time
     println!("🕐 Server Time:");
-    let time = tokio::task::spawn_blocking(|| {
-        let data_source = KrakenDataSource::new()?;
-        data_source.get_server_time()
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))??;
-    println!("{:?}\n", time);
+    let data_source = KrakenDataSource::new_async().await?;
+    let time = data_source.get_server_time()?;
+    println!("{time:?}\n");
 
     // Get ticker information for popular pairs
     println!("📈 Ticker Information:");
     let pairs = vec!["XXBTZUSD".to_string(), "XETHZUSD".to_string(), "LOCKINUSD".to_string()];
-    let tickers = tokio::task::spawn_blocking(move || {
-        let data_source = KrakenDataSource::new()?;
-        data_source.get_tickers(pairs)
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))??;
+    let data_source = KrakenDataSource::new_async().await?;
+    let tickers = data_source.get_tickers_async(pairs).await?;
     
     for ticker in &tickers {
         println!("{}: ${:.2} (24h: {:.2}%)", 
@@ -50,43 +38,41 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // Get order book for Bitcoin
     println!("📚 Order Book (XBT/USD):");
-    let order_book = tokio::task::spawn_blocking(|| {
-        let data_source = KrakenDataSource::new()?;
-        data_source.get_order_book("XBT/USD", 5)
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))??;
+    let data_source = KrakenDataSource::new_async().await?;
+    let order_book = data_source.get_order_book("XBT/USD", 5)?;
     println!("Bids:");
     for (price, volume) in &order_book.bids[..std::cmp::min(5, order_book.bids.len())] {
-        println!("  ${:.2} - {:.4}", price, volume);
+        println!("  ${price:.2} - {volume:.4}");
     }
     println!("Asks:");
     for (price, volume) in &order_book.asks[..std::cmp::min(5, order_book.asks.len())] {
-        println!("  ${:.2} - {:.4}", price, volume);
+        println!("  ${price:.2} - {volume:.4}");
     }
     println!();
 
     // Get trending crypto pairs
     println!("🔥 Trending Crypto Pairs (by volume):");
     let trending = get_trending_crypto_pairs(10).await?;
-    for (i, pair) in trending.iter().enumerate() {
-        println!("  {}. {}", i + 1, pair);
+    for (i, item) in trending.iter().enumerate() {
+        println!("  {}. {} ({}): ${:.4} | Volume: {:.0}", 
+            i + 1, 
+            item.name, 
+            item.symbol, 
+            item.price.unwrap_or(0.0),
+            item.volume.unwrap_or(0.0)
+        );
     }
     println!();
 
     // Get market summary for Ethereum
     println!("📋 Market Summary (ETH/USD):");
     let summary = get_market_summary("ETH/USD").await?;
-    println!("{:?}\n", summary);
+    println!("{summary:?}\n");
 
     // Get recent trades for Bitcoin
     println!("💱 Recent Trades (XBT/USD):");
-    let trades = tokio::task::spawn_blocking(|| {
-        let data_source = KrakenDataSource::new()?;
-        data_source.get_recent_trades("XBT/USD", None)
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))??;
+    let data_source = KrakenDataSource::new_async().await?;
+    let trades = data_source.get_recent_trades("XBT/USD", None)?;
     
     // Format trades output nicely
     if let Some(trades_obj) = trades.as_object() {
@@ -103,18 +89,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             println!("No trades data found");
         }
     } else {
-        println!("{:?}", trades);
+        println!("{trades:?}");
     }
     println!();
 
     // Get OHLC data for Bitcoin
     println!("📊 OHLC Data (XBT/USD):");
-    let ohlc = tokio::task::spawn_blocking(|| {
-        let data_source = KrakenDataSource::new()?;
-        data_source.get_ohlc("XBT/USD", Some(1), None)
-    })
-    .await
-    .map_err(|e| format!("Task join error: {}", e))??;
+    let data_source = KrakenDataSource::new_async().await?;
+    let ohlc = data_source.get_ohlc("XBT/USD", Some(1), None)?;
     
     // Format OHLC output nicely
     if let Some(ohlc_obj) = ohlc.as_object() {
@@ -131,7 +113,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             println!("No OHLC data found");
         }
     } else {
-        println!("{:?}", ohlc);
+        println!("{ohlc:?}");
     }
     println!();
 

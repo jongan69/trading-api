@@ -5,11 +5,17 @@ pub mod routes;
 pub mod services;
 pub mod types;
 pub mod errors;
+pub mod config;
+pub mod http_client;
+pub mod middleware;
+pub mod utils;
 
 use axum::Router;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 use tower_http::trace::TraceLayer;
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -66,14 +72,14 @@ use tower_http::trace::TraceLayer;
         crate::sources::kraken_data::KrakenOrderBook,
         crate::sources::kraken_data::KrakenAsset,
         crate::sources::kraken_data::KrakenAssetPair,
-        crate::routes::coingecko::CoinGeckoQuery,
-        crate::routes::coingecko::SimplePriceQuery,
-        crate::routes::coingecko::CoinGeckoResponse<crate::sources::coingecko_data::CoinGeckoCoin>,
-        crate::routes::coingecko::CoinGeckoResponse<crate::sources::coingecko_data::TrendingCoin>,
-        crate::routes::coingecko::CoinGeckoResponse<crate::sources::coingecko_data::MarketOverview>,
-        crate::routes::coingecko::CoinGeckoResponse<Vec<String>>,
-        crate::routes::coingecko::CoinGeckoResponse<serde_json::Value>,
-        crate::routes::coingecko::MarketContextResponse,
+        crate::CoinGeckoQuery,
+        crate::SimplePriceQuery,
+        crate::CoinGeckoResponse<crate::sources::coingecko_data::CoinGeckoCoin>,
+        crate::CoinGeckoResponse<crate::sources::coingecko_data::TrendingCoin>,
+        crate::CoinGeckoResponse<crate::sources::coingecko_data::MarketOverview>,
+        crate::CoinGeckoResponse<Vec<String>>,
+        crate::CoinGeckoResponse<serde_json::Value>,
+        crate::MarketContextResponse,
         crate::sources::coingecko_data::CoinGeckoCoin,
         crate::sources::coingecko_data::MarketOverview,
         crate::sources::coingecko_data::TrendingCoin,
@@ -92,11 +98,44 @@ use tower_http::trace::TraceLayer;
         (name = "data", description = "Aggregated market data from Finviz, Reddit, Yahoo,and Alpaca"),
         (name = "options", description = "Options recommendations"),
         (name = "kraken", description = "Kraken cryptocurrency exchange data"),
+        (name = "CoinGecko", description = "CoinGecko cryptocurrency data"),
         (name = "high-open-interest", description = "High open interest option contracts from Alpaca"),
         (name = "trending-options", description = "Trending tickers with undervalued options analysis")
     )
 )]
 struct ApiDoc;
+
+// CoinGecko API types
+#[derive(Debug, Deserialize, IntoParams, ToSchema)]
+pub struct CoinGeckoQuery {
+    pub limit: Option<usize>,
+    pub vs_currency: Option<String>,
+    pub order: Option<String>,
+    pub page: Option<usize>,
+    pub sparkline: Option<bool>,
+    pub price_change_percentage: Option<String>,
+}
+
+#[derive(Debug, Deserialize, IntoParams, ToSchema)]
+pub struct SimplePriceQuery {
+    pub ids: String,
+    pub vs_currencies: String,
+    pub include_24hr_change: Option<bool>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CoinGeckoResponse<T> {
+    pub success: bool,
+    pub data: T,
+    pub timestamp: i64,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MarketContextResponse {
+    pub success: bool,
+    pub context: String,
+    pub timestamp: i64,
+}
 
 pub fn build_app(state: state::AppState) -> Router {
     let openapi = ApiDoc::openapi();

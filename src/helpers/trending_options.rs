@@ -143,9 +143,9 @@ fn calculate_option_score(contract: &OptionContract, spot_price: f64, underlying
     let base_score = underlying_score;
     
     // Option-specific adjustments
-    let option_score = base_score * delta * (spot_price / premium) / (1.0 + 30.0 / 30.0); // Assuming 30 DTE for short-term
+     // Assuming 30 DTE for short-term
     
-    option_score
+    base_score * delta * (spot_price / premium) / 2.0
 }
 
 /// Calculate undervalued indicators for an option contract

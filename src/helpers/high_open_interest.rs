@@ -19,7 +19,7 @@ async fn get_option_prices(contract: &OptionContract) -> Result<OptionPrices, St
         .or_else(|_| std::env::var("APCA_API_SECRET_KEY"))
         .map_err(|_| "ALPACA_API_SECRET_KEY/APCA_API_SECRET_KEY missing".to_string())?;
 
-    let url = format!("https://api.alpaca.markets/v2/options/contracts/{}", normalized_symbol);
+    let url = format!("https://api.alpaca.markets/v2/options/contracts/{normalized_symbol}");
     
     let client = Client::new();
     let response = client.get(&url)
@@ -27,7 +27,7 @@ async fn get_option_prices(contract: &OptionContract) -> Result<OptionPrices, St
         .header("Apca-Api-Secret-Key", secret)
         .send()
         .await
-        .map_err(|e| format!("Error fetching option prices: {}", e))?;
+        .map_err(|e| format!("Error fetching option prices: {e}"))?;
 
     if !response.status().is_success() {
         if response.status().as_u16() == 429 {
@@ -37,7 +37,7 @@ async fn get_option_prices(contract: &OptionContract) -> Result<OptionPrices, St
     }
 
     let data: Value = response.json().await
-        .map_err(|e| format!("Error parsing option prices JSON: {}", e))?;
+        .map_err(|e| format!("Error parsing option prices JSON: {e}"))?;
 
     // Check if we have valid price data
     let close_price = data.get("close_price")
@@ -84,8 +84,7 @@ async fn fetch_contracts(
         .map_err(|_| "ALPACA_API_SECRET_KEY/APCA_API_SECRET_KEY missing".to_string())?;
 
     let url = format!(
-        "https://api.alpaca.markets/v2/options/contracts?underlying_symbol={}&status=active&expiration_date_gte={}&expiration_date_lte={}&type={}&limit=100",
-        normalized_ticker, expiration_start, expiration_end, option_type
+        "https://api.alpaca.markets/v2/options/contracts?underlying_symbol={normalized_ticker}&status=active&expiration_date_gte={expiration_start}&expiration_date_lte={expiration_end}&type={option_type}&limit=100"
     );
 
     let client = Client::new();
@@ -94,29 +93,29 @@ async fn fetch_contracts(
         .header("Apca-Api-Secret-Key", secret)
         .send()
         .await
-        .map_err(|e| format!("Network error fetching contracts for {}: {}", ticker, e))?;
+        .map_err(|e| format!("Network error fetching contracts for {ticker}: {e}"))?;
 
     if !response.status().is_success() {
         if response.status().as_u16() == 422 {
             let error_message = if normalized_ticker == "META" {
-                format!("Invalid ticker symbol: {} (Note: Meta's ticker changed from FB to META in June 2022)", ticker)
+                format!("Invalid ticker symbol: {ticker} (Note: Meta's ticker changed from FB to META in June 2022)")
             } else {
-                format!("Invalid ticker symbol: {}", ticker)
+                format!("Invalid ticker symbol: {ticker}")
             };
             return Err(error_message);
         }
         if response.status().as_u16() == 429 {
-            return Err(format!("Rate limit hit for {}", ticker));
+            return Err(format!("Rate limit hit for {ticker}"));
         }
         return Err(format!("Error fetching contracts for {}: {} {}", ticker, response.status(), response.status().canonical_reason().unwrap_or("")));
     }
 
     let data: Value = response.json().await
-        .map_err(|e| format!("Error parsing contracts JSON: {}", e))?;
+        .map_err(|e| format!("Error parsing contracts JSON: {e}"))?;
 
     let contracts = data.get("option_contracts")
         .and_then(|v| v.as_array())
-        .ok_or(format!("No {} contracts found for {}", option_type, ticker))?;
+        .ok_or(format!("No {option_type} contracts found for {ticker}"))?;
 
     if contracts.is_empty() {
         return Ok(None);
@@ -181,7 +180,7 @@ pub async fn get_high_open_interest_contracts(
     let short_term = match short_term_result {
         Ok(contract) => contract,
         Err(e) => {
-            eprintln!("Error fetching short-term contracts for {}: {}", ticker, e);
+            eprintln!("Error fetching short-term contracts for {ticker}: {e}");
             None
         }
     };
@@ -191,7 +190,7 @@ pub async fn get_high_open_interest_contracts(
     let leap = match leap_result {
         Ok(contract) => contract,
         Err(e) => {
-            eprintln!("Error fetching leap contracts for {}: {}", ticker, e);
+            eprintln!("Error fetching leap contracts for {ticker}: {e}");
             None
         }
     };

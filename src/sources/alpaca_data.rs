@@ -41,12 +41,12 @@ pub async fn fetch_alpaca_snapshots(symbol: &str, q: &OptionsQuery) -> Result<Va
         let (key, secret) = headers;
         // keys intentionally not logged
         let mut req = Client::new()
-            .get(format!("https://data.alpaca.markets/v1beta1/options/snapshots/{}", symbol))
+            .get(format!("https://data.alpaca.markets/v1beta1/options/snapshots/{symbol}"))
             .header("APCA-API-KEY-ID", key)
             .header("APCA-API-SECRET-KEY", secret)
             .header("accept", "application/json");
         let mut qp: Vec<(String, String)> = Vec::new();
-        if let Some(f) = feed_override.or_else(|| q.feed.as_deref()) { qp.push(("feed".into(), f.to_string())); }
+        if let Some(f) = feed_override.or(q.feed.as_deref()) { qp.push(("feed".into(), f.to_string())); }
         if let Some(v) = &q.r#type { qp.push(("type".into(), v.clone())); }
         qp.push(("limit".into(), q.alpaca_limit.unwrap_or(100).to_string()));
         if let Some(v) = q.strike_price_gte { qp.push(("strike_price_gte".into(), v.to_string())); }
@@ -69,9 +69,3 @@ pub async fn fetch_alpaca_snapshots(symbol: &str, q: &OptionsQuery) -> Result<Va
 }
 
 // Get Stocks from Alpaca
-
-// Get Crypto from Alpaca
-
-// Get Forex from Alpaca
-
-// Get Futures from Alpaca

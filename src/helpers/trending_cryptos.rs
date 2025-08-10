@@ -4,7 +4,7 @@ use crate::sources::coingecko_data::get_trending_cryptos;
 /// Get trending cryptocurrencies from Kraken by volume
 pub async fn get_trending_cryptos_kraken(limit: usize) -> Vec<String> {
     match get_trending_crypto_pairs(limit).await {
-        Ok(pairs) => pairs,
+        Ok(items) => items.into_iter().map(|item| item.symbol).collect(),
         Err(e) => {
             tracing::error!("Failed to get trending cryptos from Kraken: {}", e);
             vec![]

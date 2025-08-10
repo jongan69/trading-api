@@ -234,7 +234,7 @@ pub async fn get_screener_candidates(Query(q): Query<ScreenerQuery>) -> impl Int
             let symbols: Vec<String> = rows
                 .into_iter()
                 .take(limit)
-                .filter_map(|row| row.get(0).cloned())
+                .filter_map(|row| row.first().cloned())
                 .collect();
             (StatusCode::OK, Json(json!({ "symbols": symbols })) ).into_response()
         }
@@ -292,7 +292,7 @@ pub async fn get_recommendations_finviz(Query(q): Query<FinvizRecommendationsQue
         }
     };
 
-    let symbols: Vec<String> = rows.into_iter().filter_map(|row| row.get(0).cloned()).take(limit).collect();
+    let symbols: Vec<String> = rows.into_iter().filter_map(|row| row.first().cloned()).take(limit).collect();
     if symbols.is_empty() {
         return (StatusCode::OK, Json(json!({ "results": [] }))).into_response();
     }
@@ -326,7 +326,7 @@ pub async fn fetch_finviz_symbols(signal: &str, order: &str, screener: &str, sym
         Ok(rows) => {
             let mut symbols: Vec<String> = Vec::new();
             for row in rows.into_iter().take(symbols_limit) {
-                if let Some(t) = row.get(0) {
+                if let Some(t) = row.first() {
                     if t != "Ticker" && !t.is_empty() {
                         symbols.push(t.clone());
                     }

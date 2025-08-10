@@ -26,6 +26,48 @@ pub struct LimitQuery {
     pub limit: Option<usize>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TickerSymbol(String);
+
+impl TickerSymbol {
+    pub fn new(s: String) -> Result<Self, String> {
+        let s = s.trim().to_uppercase();
+        if s.is_empty() || s.len() > 10 {
+            return Err("Invalid ticker symbol".to_string());
+        }
+        Ok(Self(s))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for TickerSymbol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl serde::Serialize for TickerSymbol {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.0)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for TickerSymbol {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        TickerSymbol::new(s).map_err(serde::de::Error::custom)
+    }
+}
+
 #[derive(Clone, Deserialize, Serialize, ToSchema)]
 pub struct OptionContract {
     pub symbol: String,
@@ -105,6 +147,23 @@ pub struct OptionsQuery {
     pub alpaca_limit: Option<u32>,
     pub underlying_top: Option<usize>,
     pub debug: Option<bool>,
+}
+
+#[derive(Clone, Deserialize, Serialize, ToSchema)]
+pub struct TrendingItem {
+    pub id: String,
+    pub symbol: String,
+    pub name: String,
+    pub price: Option<f64>,
+    pub price_change_24h: Option<f64>,
+    pub price_change_percentage_24h: Option<f64>,
+    pub volume: Option<f64>,
+    pub market_cap: Option<f64>,
+    pub market_cap_rank: Option<u32>,
+    pub score: Option<f64>,
+    pub source: String, // "coingecko" or "kraken"
+    pub image_url: Option<String>,
+    pub last_updated: Option<String>,
 }
 
 

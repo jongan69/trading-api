@@ -9,17 +9,18 @@ async fn spawn_app() -> (String, JoinHandle<()>) {
         http: reqwest::Client::new(),
         yahoo: std::sync::Arc::new(YahooConnector::new().unwrap()),
         concurrency_options: std::sync::Arc::new(tokio::sync::Semaphore::new(8)),
+        config: std::sync::Arc::new(trading_api::config::Config::default()),
     };
     let app = build_app(state).into_make_service();
     let h = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
-    (format!("http://{}", addr), h)
+    (format!("http://{addr}"), h)
 }
 
 #[tokio::test]
 async fn health_ok() {
     if std::env::var("RUN_E2E").is_err() { return; }
     let (base, _h) = spawn_app().await;
-    let res = reqwest::get(format!("{}/health", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/health")).await.unwrap();
     assert!(res.status().is_success());
 }
 
@@ -37,8 +38,8 @@ async fn data_endpoints() {
         "/reddit/stocks?limit=2",
         "/trending/stocks?limit=2",
     ] {
-        let res = reqwest::get(format!("{}{}", base, path)).await.unwrap();
-        assert!(res.status().is_success(), "failed: {}", path);
+        let res = reqwest::get(format!("{base}{path}")).await.unwrap();
+        assert!(res.status().is_success(), "failed: {path}");
     }
 }
 
@@ -46,11 +47,11 @@ async fn data_endpoints() {
 async fn yahoo_endpoints() {
     if std::env::var("RUN_E2E").is_err() { return; }
     let (base, _h) = spawn_app().await;
-    let res = reqwest::get(format!("{}/metrics/yahoo?symbols=AAPL&range=1mo&interval=1d", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/metrics/yahoo?symbols=AAPL&range=1mo&interval=1d")).await.unwrap();
     assert!(res.status().is_success());
-    let res = reqwest::get(format!("{}/rank/yahoo?symbols=AAPL,MSFT&range=1mo&interval=1d", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/rank/yahoo?symbols=AAPL,MSFT&range=1mo&interval=1d")).await.unwrap();
     assert!(res.status().is_success());
-    let res = reqwest::get(format!("{}/recommendations/yahoo?symbols=AAPL,MSFT&range=1mo&interval=1d", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/recommendations/yahoo?symbols=AAPL,MSFT&range=1mo&interval=1d")).await.unwrap();
     assert!(res.status().is_success());
 }
 
@@ -58,9 +59,9 @@ async fn yahoo_endpoints() {
 async fn finviz_endpoints() {
     if std::env::var("RUN_E2E").is_err() { return; }
     let (base, _h) = spawn_app().await;
-    let res = reqwest::get(format!("{}/screener/candidates?signal=TopGainers&order=Price&screener=Performance&limit=5", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/screener/candidates?signal=TopGainers&order=Price&screener=Performance&limit=5")).await.unwrap();
     assert!(res.status().is_success());
-    let res = reqwest::get(format!("{}/recommendations/finviz?signal=TopGainers&order=Price&screener=Performance&limit=10&range=1mo&interval=1d", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/recommendations/finviz?signal=TopGainers&order=Price&screener=Performance&limit=10&range=1mo&interval=1d")).await.unwrap();
     assert!(res.status().is_success());
 }
 
@@ -68,7 +69,7 @@ async fn finviz_endpoints() {
 async fn options_endpoint_yahoo_fallback() {
     if std::env::var("RUN_E2E").is_err() { return; }
     let (base, _h) = spawn_app().await;
-    let res = reqwest::get(format!("{}/options/recommendations?symbols=AAPL&side=call&min_dte=7&max_dte=30&range=1mo&interval=1d&limit=5", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/options/recommendations?symbols=AAPL&side=call&min_dte=7&max_dte=30&range=1mo&interval=1d&limit=5")).await.unwrap();
     assert!(res.status().is_success());
 }
 
@@ -83,7 +84,7 @@ async fn kraken_endpoints() {
         "/kraken/status",
         "/kraken/time",
     ] {
-        let res = reqwest::get(format!("{}{}", base, path)).await.unwrap();
+        let res = reqwest::get(format!("{base}{path}")).await.unwrap();
         assert!(res.status().is_success(), "failed: {} with status: {}", path, res.status());
     }
     
@@ -94,7 +95,7 @@ async fn kraken_endpoints() {
         "/kraken/pairs",
         "/trending/crypto",
     ] {
-        let res = reqwest::get(format!("{}{}", base, path)).await.unwrap();
+        let res = reqwest::get(format!("{base}{path}")).await.unwrap();
         // Allow both success and server errors (API might be down or have issues)
         assert!(res.status().is_success() || res.status().is_server_error(), 
                 "failed: {} with status: {}", path, res.status());
@@ -117,14 +118,14 @@ async fn coingecko_endpoints() {
         "/coingecko/market-context",
         "/coingecko/trending-symbols",
     ] {
-        let res = reqwest::get(format!("{}{}", base, path)).await.unwrap();
+        let res = reqwest::get(format!("{base}{path}")).await.unwrap();
         // Allow success, rate limiting (429), and server errors (500) since CoinGecko API might have issues
         assert!(res.status().is_success() || res.status().as_u16() == 429 || res.status().is_server_error(), 
                 "failed: {} with status: {}", path, res.status());
     }
     
     // Test simple price endpoint with parameters
-    let res = reqwest::get(format!("{}/coingecko/simple-price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/coingecko/simple-price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true")).await.unwrap();
     assert!(res.status().is_success() || res.status().as_u16() == 429 || res.status().is_server_error(), 
             "failed: simple-price with status: {}", res.status());
 }
@@ -136,7 +137,7 @@ async fn coingecko_response_structure() {
     let (base, _h) = spawn_app().await;
     
     // Test that successful responses have the expected structure
-    let res = reqwest::get(format!("{}/coingecko/top?limit=3", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/coingecko/top?limit=3")).await.unwrap();
     
     if res.status().is_success() {
         let json: serde_json::Value = res.json().await.unwrap();
@@ -169,7 +170,7 @@ async fn coingecko_market_overview_structure() {
     
     let (base, _h) = spawn_app().await;
     
-    let res = reqwest::get(format!("{}/coingecko/market-overview", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/coingecko/market-overview")).await.unwrap();
     
     if res.status().is_success() {
         let json: serde_json::Value = res.json().await.unwrap();
@@ -193,7 +194,7 @@ async fn coingecko_trending_structure() {
     
     let (base, _h) = spawn_app().await;
     
-    let res = reqwest::get(format!("{}/coingecko/trending", base)).await.unwrap();
+    let res = reqwest::get(format!("{base}/coingecko/trending")).await.unwrap();
     
     if res.status().is_success() {
         let json: serde_json::Value = res.json().await.unwrap();

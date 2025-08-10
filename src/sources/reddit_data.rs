@@ -39,7 +39,7 @@ pub async fn get_reddit_trending_stocks() -> Vec<String> {
 
     // Loop through subreddits
     for subreddit_name in subreddits {
-        println!("  Scraping r/{}...", subreddit_name);
+        println!("  Scraping r/{subreddit_name}...");
 
         let subreddit = Subreddit::new(subreddit_name);
         match subreddit.hot(20, None).await {
@@ -47,7 +47,7 @@ pub async fn get_reddit_trending_stocks() -> Vec<String> {
                 for post in listing.data.children {
                     let title = post.data.title.to_uppercase();
                     let text = post.data.selftext.to_uppercase();
-                    let combined = format!("{} {}", title, text);
+                    let combined = format!("{title} {text}");
 
                     for cap in ticker_re.find_iter(&combined) {
                         let ticker = cap.as_str();
@@ -58,7 +58,7 @@ pub async fn get_reddit_trending_stocks() -> Vec<String> {
                 }
             }
             Err(e) => {
-                println!("  Error scraping r/{}: {}", subreddit_name, e);
+                println!("  Error scraping r/{subreddit_name}: {e}");
                 continue;
             }
         }
@@ -97,7 +97,7 @@ pub async fn get_subreddit_new_posts(subreddit_name: &str, limit: usize) -> Resu
     let listing = subreddit
         .latest(limit as u32, None)
         .await
-        .map_err(|e| format!("reddit new fetch error for r/{}: {}", subreddit_name, e))?;
+        .map_err(|e| format!("reddit new fetch error for r/{subreddit_name}: {e}"))?;
 
     let mut posts: Vec<Value> = Vec::new();
     for child in listing.data.children {

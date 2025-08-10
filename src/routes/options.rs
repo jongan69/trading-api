@@ -53,7 +53,7 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
     if symbols_source == "yahoo" || symbols_source == "both" {
         if let Some(qstr) = q.yahoo_search.as_deref() {
             let ylimit = q.yahoo_limit.unwrap_or(25);
-            if debug { println!("[options] yahoo search query='{}' limit={} ", qstr, ylimit); }
+            if debug { println!("[options] yahoo search query='{qstr}' limit={ylimit} "); }
             match state.yahoo.search_ticker(qstr).await {
                 Ok(resp) => {
                     let mut count = 0usize;
@@ -65,10 +65,10 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
                             if count >= ylimit { break; }
                         }
                     }
-                    if debug { println!("[options] yahoo search added {} symbols", count); }
+                    if debug { println!("[options] yahoo search added {count} symbols"); }
                 }
                 Err(err) => {
-                    if debug { println!("[options] yahoo search error: {}", err); }
+                    if debug { println!("[options] yahoo search error: {err}"); }
                 }
             }
         }
@@ -76,7 +76,7 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
             let list = q.yahoo_list.as_deref().unwrap_or("most_actives");
             let ylimit = q.yahoo_limit.unwrap_or(25);
             let region = q.yahoo_region.as_deref().unwrap_or("US");
-            if debug { println!("[options] yahoo list='{}' region='{}' limit={}", list, region, ylimit); }
+            if debug { println!("[options] yahoo list='{list}' region='{region}' limit={ylimit}"); }
             let fetched = if list.eq_ignore_ascii_case("trending") {
                 sources::yahoo_data::yahoo_trending(region, ylimit).await
             } else {
@@ -93,7 +93,7 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
                     if debug { println!("[options] yahoo predefined fetched {} symbols", syms.len()); }
                     symbols.append(&mut syms);
                 }
-                Err(err) => { if debug { println!("[options] yahoo predefined error: {}", err); } }
+                Err(err) => { if debug { println!("[options] yahoo predefined error: {err}"); } }
             }
         }
         if !user_symbols.is_empty() {
@@ -112,14 +112,14 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
         let order = q.order.as_deref().unwrap_or("MarketCap");
         let screener = q.screener.as_deref().unwrap_or("Performance");
         let symbols_limit = q.symbols_limit.unwrap_or(20);
-        if debug { println!("[options] finviz source: signal={}, order={}, screener={}, limit={}", signal, order, screener, symbols_limit); }
+        if debug { println!("[options] finviz source: signal={signal}, order={order}, screener={screener}, limit={symbols_limit}"); }
         match sources::finviz_data::fetch_finviz_symbols(signal, order, screener, symbols_limit).await {
             Ok(fetched) => {
                 symbols.extend(fetched);
                 if debug { println!("[options] finviz symbols count: {}", symbols.len()); }
             }
             Err(err) => {
-                if debug { println!("[options] finviz error: {}", err); }
+                if debug { println!("[options] finviz error: {err}"); }
                 return Err(ApiError::Upstream(err));
             }
         }
@@ -145,7 +145,7 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
     }
 
     if let Some(top_n) = q.underlying_top {
-        if debug { println!("[options] underlying_top requested: {}", top_n); }
+        if debug { println!("[options] underlying_top requested: {top_n}"); }
         let weights_outer = metrics::CompositeWeights { sharpe: w_sharpe, sortino: w_sortino, calmar: w_calmar };
         let yahoo_outer = state.yahoo.clone();
         let rank_futs = symbols.iter().cloned().map(move |sym| {
@@ -161,8 +161,8 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
         let mut scored: Vec<(String, f64)> = join_all(rank_futs).await.into_iter().flatten().collect();
         scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         if debug {
-            let prev: Vec<_> = scored.iter().take(5).map(|(s, sc)| format!("{}:{:.3}", s, sc)).collect();
-            println!("[options] underlying ranking top5: {:?}", prev);
+            let prev: Vec<_> = scored.iter().take(5).map(|(s, sc)| format!("{s}:{sc:.3}")).collect();
+            println!("[options] underlying ranking top5: {prev:?}");
         }
         if scored.len() > top_n { scored.truncate(top_n); }
         symbols = scored.into_iter().map(|(s, _)| s).collect();
@@ -186,18 +186,18 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
         let debug_local = debug;
         let yahoo = state.yahoo.clone();
         async move {
-            if debug_local { println!("[options][{}] fetch spot & prices", symbol); }
-            let spot = match latest_close(&yahoo, &symbol).await { Ok(s) => s, Err(e) => { if debug_local { println!("[options][{}] spot error: {}", symbol, e); } return Vec::new() } };
-            let prices = match fetch_prices_for_symbol(&yahoo, &symbol, period_label).await { Ok(p) => p, Err(e) => { if debug_local { println!("[options][{}] prices error: {}", symbol, e); } return Vec::new() } };
+            if debug_local { println!("[options][{symbol}] fetch spot & prices"); }
+            let spot = match latest_close(&yahoo, &symbol).await { Ok(s) => s, Err(e) => { if debug_local { println!("[options][{symbol}] spot error: {e}"); } return Vec::new() } };
+            let prices = match fetch_prices_for_symbol(&yahoo, &symbol, period_label).await { Ok(p) => p, Err(e) => { if debug_local { println!("[options][{symbol}] prices error: {e}"); } return Vec::new() } };
             let returns = metrics::compute_returns_from_prices(&prices);
             if debug_local { println!("[options][{}] spot={}, returns_len={}", symbol, spot, returns.len()); }
             let under_metrics = metrics_for_prices(&prices, rf_annual, rf_annual, periods_per_year, Some(metrics::CompositeWeights { sharpe: w_sharpe, sortino: w_sortino, calmar: w_calmar }));
             let base_score = under_metrics.composite_score;
-            if debug_local { println!("[options][{}] composite={:.4}", symbol, base_score); }
+            if debug_local { println!("[options][{symbol}] composite={base_score:.4}"); }
 
             let now_ts = OffsetDateTime::now_utc().unix_timestamp();
             let mut out: Vec<Value> = Vec::new();
-            if debug_local { println!("[options][{}] fetch alpaca snapshots", symbol); }
+            if debug_local { println!("[options][{symbol}] fetch alpaca snapshots"); }
             if let Ok(v) = sources::alpaca_data::fetch_alpaca_snapshots(&symbol, &q_local).await {
                 if let Some(snaps) = v.get("snapshots").and_then(|s| s.as_array()) {
                     if debug_local { println!("[options][{}] snapshots: {}", symbol, snaps.len()); }
@@ -267,11 +267,11 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
                     }
                 }
             } else {
-                if debug_local { println!("[options][{}] falling back to yahoo options", symbol); }
+                if debug_local { println!("[options][{symbol}] falling back to yahoo options"); }
                 if let Ok(chain) = sources::yahoo_data::fetch_yahoo_options_chain(&symbol).await {
-                    if let Some(result) = chain.get("optionChain").and_then(|c| c.get("result")).and_then(|r| r.as_array()).and_then(|a| a.get(0)) {
+                    if let Some(result) = chain.get("optionChain").and_then(|c| c.get("result")).and_then(|r| r.as_array()).and_then(|a| a.first()) {
                         let now_ts = OffsetDateTime::now_utc().unix_timestamp();
-                        let options = result.get("options").and_then(|o| o.as_array()).and_then(|a| a.get(0));
+                        let options = result.get("options").and_then(|o| o.as_array()).and_then(|a| a.first());
                         let process = |arr: Option<&Value>, is_call: bool, out: &mut Vec<Value>| {
                             if let Some(arr) = arr.and_then(|v| v.as_array()) {
                                 for c in arr {

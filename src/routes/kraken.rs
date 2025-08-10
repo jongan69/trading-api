@@ -56,15 +56,10 @@ pub fn router(_state: AppState) -> Router {
 pub async fn get_ticker(Query(query): Query<KrakenQuery>) -> Result<impl IntoResponse, ApiError> {
     let pairs = query.pairs
         .map(|p| p.split(',').map(|s| s.trim().to_string()).collect())
-        .unwrap_or_else(|| vec!["XBT/USD".to_string(), "ETH/USD".to_string()]);
+        .unwrap_or_default();
     
-    let tickers = tokio::task::spawn_blocking(move || {
-        let data_source = KrakenDataSource::new()?;
-        data_source.get_tickers(pairs)
-    })
-    .await
-    .map_err(|e| ApiError::Upstream(format!("Task join error: {}", e)))?
-    .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let data_source = KrakenDataSource::new_async().await.map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let tickers = data_source.get_tickers_async(pairs).await.map_err(|e| ApiError::Upstream(e.to_string()))?;
     
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -92,9 +87,9 @@ pub async fn get_ticker_by_pair(
     Path(pair): Path<String>,
     Query(_query): Query<KrakenQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let data_source = KrakenDataSource::new().map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let data_source = KrakenDataSource::new_async().await.map_err(|e| ApiError::Upstream(e.to_string()))?;
     
-    let tickers = data_source.get_tickers(vec![pair]).map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let tickers = data_source.get_tickers_async(vec![pair]).await.map_err(|e| ApiError::Upstream(e.to_string()))?;
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
@@ -121,10 +116,15 @@ pub async fn get_order_book(
     Path(pair): Path<String>,
     Query(query): Query<KrakenQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let data_source = KrakenDataSource::new().map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let data_source = KrakenDataSource::new_async().await.map_err(|e| ApiError::Upstream(e.to_string()))?;
     
     let depth = query.depth.unwrap_or(10);
-    let order_book = data_source.get_order_book(&pair, depth).map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let order_book = tokio::task::spawn_blocking(move || {
+        data_source.get_order_book(&pair, depth)
+    })
+    .await
+    .map_err(|e| ApiError::Upstream(format!("Task join error: {e}")))?
+    .map_err(|e| ApiError::Upstream(e.to_string()))?;
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
@@ -147,13 +147,8 @@ pub async fn get_order_book(
     responses((status = 200, description = "All available assets"))
 )]
 pub async fn get_assets() -> Result<impl IntoResponse, ApiError> {
-    let assets = tokio::task::spawn_blocking(|| {
-        let data_source = KrakenDataSource::new()?;
-        data_source.get_assets()
-    })
-    .await
-    .map_err(|e| ApiError::Upstream(format!("Task join error: {}", e)))?
-    .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let data_source = KrakenDataSource::new_async().await.map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let assets = data_source.get_assets().map_err(|e| ApiError::Upstream(e.to_string()))?;
     
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -177,13 +172,8 @@ pub async fn get_assets() -> Result<impl IntoResponse, ApiError> {
     responses((status = 200, description = "All available asset pairs"))
 )]
 pub async fn get_asset_pairs() -> Result<impl IntoResponse, ApiError> {
-    let pairs = tokio::task::spawn_blocking(|| {
-        let data_source = KrakenDataSource::new()?;
-        data_source.get_asset_pairs()
-    })
-    .await
-    .map_err(|e| ApiError::Upstream(format!("Task join error: {}", e)))?
-    .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let data_source = KrakenDataSource::new_async().await.map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let pairs = data_source.get_asset_pairs().map_err(|e| ApiError::Upstream(e.to_string()))?;
     
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -211,7 +201,7 @@ pub async fn get_recent_trades(
     Path(pair): Path<String>,
     Query(query): Query<KrakenQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let data_source = KrakenDataSource::new().map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let data_source = KrakenDataSource::new_async().await.map_err(|e| ApiError::Upstream(e.to_string()))?;
     
     let trades = data_source.get_recent_trades(&pair, query.since).map_err(|e| ApiError::Upstream(e.to_string()))?;
     let timestamp = std::time::SystemTime::now()
@@ -240,7 +230,7 @@ pub async fn get_ohlc(
     Path(pair): Path<String>,
     Query(query): Query<KrakenQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let data_source = KrakenDataSource::new().map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let data_source = KrakenDataSource::new_async().await.map_err(|e| ApiError::Upstream(e.to_string()))?;
     
     let ohlc = data_source.get_ohlc(&pair, query.interval, query.since).map_err(|e| ApiError::Upstream(e.to_string()))?;
     let timestamp = std::time::SystemTime::now()
@@ -267,7 +257,7 @@ pub async fn get_ohlc(
 )]
 pub async fn get_trending_crypto(Query(query): Query<KrakenQuery>) -> Result<impl IntoResponse, ApiError> {
     let limit = query.limit.unwrap_or(10);
-    let trending_pairs = get_trending_crypto_pairs(limit).await.map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let trending_items = get_trending_crypto_pairs(limit).await.map_err(|e| ApiError::Upstream(e.to_string()))?;
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
@@ -275,7 +265,7 @@ pub async fn get_trending_crypto(Query(query): Query<KrakenQuery>) -> Result<imp
     
     let response = KrakenResponse {
         success: true,
-        data: trending_pairs,
+        data: trending_items,
         timestamp,
     };
     
@@ -319,7 +309,7 @@ pub async fn get_system_status() -> Result<impl IntoResponse, ApiError> {
     
     let status = tokio::task::spawn_blocking(move || data_source.get_system_status())
         .await
-        .map_err(|e| ApiError::Upstream(format!("Task join error: {}", e)))?
+        .map_err(|e| ApiError::Upstream(format!("Task join error: {e}")))?
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
     
     let timestamp = std::time::SystemTime::now()
@@ -350,7 +340,7 @@ pub async fn get_server_time() -> Result<impl IntoResponse, ApiError> {
     
     let time = tokio::task::spawn_blocking(move || data_source.get_server_time())
         .await
-        .map_err(|e| ApiError::Upstream(format!("Task join error: {}", e)))?
+        .map_err(|e| ApiError::Upstream(format!("Task join error: {e}")))?
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
     
     let timestamp = std::time::SystemTime::now()

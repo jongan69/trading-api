@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Duration;
+use crate::types::TrendingItem;
 
 #[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
 pub struct CoinGeckoCoin {
@@ -51,11 +52,11 @@ pub struct MarketOverview {
 
 #[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
 pub struct TrendingCoin {
-    pub item: TrendingItem,
+    pub item: CoinGeckoTrendingItem,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, utoipa::ToSchema)]
-pub struct TrendingItem {
+pub struct CoinGeckoTrendingItem {
     pub id: String,
     pub coin_id: u32,
     pub name: String,
@@ -77,6 +78,12 @@ pub struct CoinGeckoResponse<T> {
 pub struct CoinGeckoClient {
     client: reqwest::Client,
     base_url: String,
+}
+
+impl Default for CoinGeckoClient {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CoinGeckoClient {
@@ -126,7 +133,7 @@ impl CoinGeckoClient {
             .query(&params)
             .send()
             .await
-            .map_err(|e| format!("CoinGecko API request failed: {}", e))?;
+            .map_err(|e| format!("CoinGecko API request failed: {e}"))?;
 
         if !response.status().is_success() {
             return Err(format!(
@@ -138,7 +145,7 @@ impl CoinGeckoClient {
         let coins: Vec<CoinGeckoCoin> = response
             .json()
             .await
-            .map_err(|e| format!("Failed to parse CoinGecko response: {}", e))?;
+            .map_err(|e| format!("Failed to parse CoinGecko response: {e}"))?;
 
         Ok(coins)
     }
@@ -192,7 +199,7 @@ impl CoinGeckoClient {
     }
 
     /// Get trending coins
-    pub async fn get_trending_coins(&self) -> Result<Vec<TrendingCoin>, String> {
+    pub async fn get_trending_coins(&self) -> Result<Vec<TrendingItem>, String> {
         let url = format!("{}/search/trending", self.base_url);
 
         let response = self
@@ -200,7 +207,7 @@ impl CoinGeckoClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| format!("CoinGecko trending request failed: {}", e))?;
+            .map_err(|e| format!("CoinGecko trending request failed: {e}"))?;
 
         if !response.status().is_success() {
             return Err(format!(
@@ -212,7 +219,7 @@ impl CoinGeckoClient {
         let data: Value = response
             .json()
             .await
-            .map_err(|e| format!("Failed to parse trending response: {}", e))?;
+            .map_err(|e| format!("Failed to parse trending response: {e}"))?;
 
         let coins = data
             .get("coins")
@@ -222,9 +229,31 @@ impl CoinGeckoClient {
         let trending_coins: Vec<TrendingCoin> = serde_json::from_value(Value::Array(
             coins.clone(),
         ))
-        .map_err(|e| format!("Failed to deserialize trending coins: {}", e))?;
+        .map_err(|e| format!("Failed to deserialize trending coins: {e}"))?;
 
-        Ok(trending_coins)
+        // Convert to unified TrendingItem structure
+        let trending_items: Vec<TrendingItem> = trending_coins
+            .into_iter()
+            .map(|trending_coin| {
+                TrendingItem {
+                    id: trending_coin.item.id.clone(),
+                    symbol: trending_coin.item.symbol.clone(),
+                    name: trending_coin.item.name.clone(),
+                    price: None, // CoinGecko trending doesn't provide current price
+                    price_change_24h: None,
+                    price_change_percentage_24h: None,
+                    volume: None,
+                    market_cap: None,
+                    market_cap_rank: Some(trending_coin.item.market_cap_rank),
+                    score: Some(trending_coin.item.score as f64),
+                    source: "coingecko".to_string(),
+                    image_url: Some(trending_coin.item.thumb.clone()),
+                    last_updated: None,
+                }
+            })
+            .collect();
+
+        Ok(trending_items)
     }
 
     /// Get market overview statistics
@@ -311,7 +340,7 @@ impl CoinGeckoClient {
             .query(&params)
             .send()
             .await
-            .map_err(|e| format!("CoinGecko simple price request failed: {}", e))?;
+            .map_err(|e| format!("CoinGecko simple price request failed: {e}"))?;
 
         if !response.status().is_success() {
             return Err(format!(
@@ -323,7 +352,7 @@ impl CoinGeckoClient {
         let data: Value = response
             .json()
             .await
-            .map_err(|e| format!("Failed to parse simple price response: {}", e))?;
+            .map_err(|e| format!("Failed to parse simple price response: {e}"))?;
 
         Ok(data)
     }
@@ -412,7 +441,7 @@ impl CoinGeckoClient {
         let trending = self.get_trending_coins().await?;
         Ok(trending
             .iter()
-            .map(|coin| coin.item.symbol.to_uppercase())
+            .map(|coin| coin.symbol.to_uppercase())
             .collect())
     }
 }
@@ -433,7 +462,7 @@ pub async fn get_top_losers(limit: usize) -> Result<Vec<CoinGeckoCoin>, String> 
     client.get_top_losers(limit).await
 }
 
-pub async fn get_trending_coins() -> Result<Vec<TrendingCoin>, String> {
+pub async fn get_trending_coins() -> Result<Vec<TrendingItem>, String> {
     let client = CoinGeckoClient::new();
     client.get_trending_coins().await
 }
@@ -491,7 +520,7 @@ mod tests {
             Err(e) => {
                 // Allow rate limiting errors
                 assert!(e.contains("429") || e.contains("rate limit") || e.contains("Too Many Requests"), 
-                        "Unexpected error: {}", e);
+                        "Unexpected error: {e}");
             }
         }
     }
@@ -505,15 +534,15 @@ mod tests {
                 
                 // Check that trending coins have required fields
                 for coin in trending {
-                    assert!(!coin.item.id.is_empty(), "Trending coin should have an ID");
-                    assert!(!coin.item.symbol.is_empty(), "Trending coin should have a symbol");
-                    assert!(!coin.item.name.is_empty(), "Trending coin should have a name");
+                    assert!(!coin.id.is_empty(), "Trending coin should have an ID");
+                    assert!(!coin.symbol.is_empty(), "Trending coin should have a symbol");
+                    assert!(!coin.name.is_empty(), "Trending coin should have a name");
                 }
             }
             Err(e) => {
                 // Allow rate limiting errors
                 assert!(e.contains("429") || e.contains("rate limit") || e.contains("Too Many Requests"), 
-                        "Unexpected error: {}", e);
+                        "Unexpected error: {e}");
             }
         }
     }
@@ -531,7 +560,7 @@ mod tests {
             Err(e) => {
                 // Allow rate limiting errors
                 assert!(e.contains("429") || e.contains("rate limit") || e.contains("Too Many Requests"), 
-                        "Unexpected error: {}", e);
+                        "Unexpected error: {e}");
             }
         }
     }
@@ -558,7 +587,7 @@ mod tests {
             Err(e) => {
                 // Allow rate limiting errors
                 assert!(e.contains("429") || e.contains("rate limit") || e.contains("Too Many Requests"), 
-                        "Unexpected error: {}", e);
+                        "Unexpected error: {e}");
             }
         }
     }
@@ -579,7 +608,7 @@ mod tests {
             Err(e) => {
                 // Allow rate limiting errors
                 assert!(e.contains("429") || e.contains("rate limit") || e.contains("Too Many Requests"), 
-                        "Unexpected error: {}", e);
+                        "Unexpected error: {e}");
             }
         }
     }

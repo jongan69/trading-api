@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let batch_results = get_high_open_interest_contracts_batch(&tickers, Some("call")).await;
     
     for (ticker, result) in batch_results {
-        println!("   {}:", ticker);
+        println!("   {ticker}:");
         if let Some(contract) = &result.short_term {
             println!("     Short-term: {} @ ${} (OI: {:?})", 
                 contract.symbol, contract.strike_price, contract.open_interest);

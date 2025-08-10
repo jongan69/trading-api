@@ -46,8 +46,7 @@ pub async fn get_trending_from_yahoo() -> Vec<String> {
 
 pub async fn yahoo_predefined_list(scr_id: &str, count: usize) -> Result<Vec<String>, String> {
     let url = format!(
-        "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?count={}&scrIds={}",
-        count, scr_id
+        "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?count={count}&scrIds={scr_id}"
     );
     let resp = Client::new()
         .get(url)
@@ -64,7 +63,7 @@ pub async fn yahoo_predefined_list(scr_id: &str, count: usize) -> Result<Vec<Str
         .get("finance")
         .and_then(|f| f.get("result"))
         .and_then(|r| r.as_array())
-        .and_then(|arr| arr.get(0))
+        .and_then(|arr| arr.first())
         .and_then(|o| o.get("quotes"))
         .and_then(|q| q.as_array())
     {
@@ -81,8 +80,7 @@ pub async fn yahoo_predefined_list(scr_id: &str, count: usize) -> Result<Vec<Str
 
 pub async fn yahoo_trending(region: &str, count: usize) -> Result<Vec<String>, String> {
     let url = format!(
-        "https://query1.finance.yahoo.com/v1/finance/trending/{}?count={}",
-        region, count
+        "https://query1.finance.yahoo.com/v1/finance/trending/{region}?count={count}"
     );
     let resp = Client::new()
         .get(url)
@@ -99,7 +97,7 @@ pub async fn yahoo_trending(region: &str, count: usize) -> Result<Vec<String>, S
         .get("finance")
         .and_then(|f| f.get("result"))
         .and_then(|r| r.as_array())
-        .and_then(|arr| arr.get(0))
+        .and_then(|arr| arr.first())
         .and_then(|o| o.get("quotes"))
         .and_then(|q| q.as_array())
     {
@@ -115,7 +113,7 @@ pub async fn yahoo_trending(region: &str, count: usize) -> Result<Vec<String>, S
 }
 
 pub async fn fetch_yahoo_options_chain(symbol: &str) -> Result<Value, String> {
-    let url = format!("https://query2.finance.yahoo.com/v7/finance/options/{}", symbol);
+    let url = format!("https://query2.finance.yahoo.com/v7/finance/options/{symbol}");
     let resp = Client::new()
         .get(url)
         .header("accept", "application/json")

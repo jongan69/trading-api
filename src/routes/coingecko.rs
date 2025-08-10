@@ -5,45 +5,14 @@ use axum::{
     routing::get,
     Router,
 };
-use serde::{Deserialize, Serialize};
-use utoipa::{IntoParams, ToSchema};
 use crate::sources::coingecko_data::{
-    CoinGeckoCoin, MarketOverview, TrendingCoin, get_top_coins, get_top_gainers, 
+    CoinGeckoCoin, MarketOverview, get_top_coins, get_top_gainers, 
     get_top_losers, get_trending_coins, get_market_overview, get_market_context,
     get_trending_cryptos, get_simple_price
 };
+use crate::types::TrendingItem;
+use crate::{CoinGeckoQuery, SimplePriceQuery, CoinGeckoResponse, MarketContextResponse};
 use serde_json::Value;
-
-#[derive(Debug, Deserialize, IntoParams, utoipa::ToSchema)]
-pub struct CoinGeckoQuery {
-    pub limit: Option<usize>,
-    pub vs_currency: Option<String>,
-    pub order: Option<String>,
-    pub page: Option<usize>,
-    pub sparkline: Option<bool>,
-    pub price_change_percentage: Option<String>,
-}
-
-#[derive(Debug, Deserialize, IntoParams, utoipa::ToSchema)]
-pub struct SimplePriceQuery {
-    pub ids: String,
-    pub vs_currencies: String,
-    pub include_24hr_change: Option<bool>,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct CoinGeckoResponse<T> {
-    pub success: bool,
-    pub data: T,
-    pub timestamp: i64,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct MarketContextResponse {
-    pub success: bool,
-    pub context: String,
-    pub timestamp: i64,
-}
 
 /// Get top cryptocurrencies by market cap
 #[utoipa::path(
@@ -137,12 +106,12 @@ pub async fn get_top_losers_route(
     get,
     path = "/coingecko/trending",
     responses(
-        (status = 200, description = "Success", body = CoinGeckoResponse<Vec<TrendingCoin>>),
+        (status = 200, description = "Success", body = CoinGeckoResponse<Vec<TrendingItem>>),
         (status = 500, description = "Internal server error", body = String)
     ),
     tag = "CoinGecko"
 )]
-pub async fn get_trending_cryptocurrencies() -> Result<Json<CoinGeckoResponse<Vec<TrendingCoin>>>, (StatusCode, String)> {
+pub async fn get_trending_cryptocurrencies() -> Result<Json<CoinGeckoResponse<Vec<TrendingItem>>>, (StatusCode, String)> {
     match get_trending_coins().await {
         Ok(coins) => {
             let response = CoinGeckoResponse {
