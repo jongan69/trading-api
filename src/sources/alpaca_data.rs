@@ -13,7 +13,7 @@ pub async fn get_alpaca_news() -> Result<Value, String> {
         .or_else(|_| std::env::var("APCA_API_SECRET_KEY"))
         .map_err(|_| "ALPACA_API_SECRET_KEY/APCA_API_SECRET_KEY missing".to_string())?;
     let client = Client::new();
-    let resp = client.get("https://data.alpaca.markets/v1beta1/news?sort=desc")
+    let resp = client.get("https://data.alpaca.markets/v1beta1/news?sort=desc&limit=50")
         .header("APCA-API-KEY-ID", key)
         .header("APCA-API-SECRET-KEY", secret)
         .header("accept", "application/json")
