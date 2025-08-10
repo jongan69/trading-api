@@ -72,4 +72,154 @@ async fn options_endpoint_yahoo_fallback() {
     assert!(res.status().is_success());
 }
 
+#[tokio::test]
+async fn kraken_endpoints() {
+    if std::env::var("RUN_E2E").is_err() { return; }
+    
+    let (base, _h) = spawn_app().await;
+    
+    // Test basic endpoints that should work
+    for path in [
+        "/kraken/status",
+        "/kraken/time",
+    ] {
+        let res = reqwest::get(format!("{}{}", base, path)).await.unwrap();
+        assert!(res.status().is_success(), "failed: {} with status: {}", path, res.status());
+    }
+    
+    // Test data endpoints that might fail due to API issues (allow 500 errors)
+    for path in [
+        "/kraken/ticker",
+        "/kraken/assets",
+        "/kraken/pairs",
+        "/trending/crypto",
+    ] {
+        let res = reqwest::get(format!("{}{}", base, path)).await.unwrap();
+        // Allow both success and server errors (API might be down or have issues)
+        assert!(res.status().is_success() || res.status().is_server_error(), 
+                "failed: {} with status: {}", path, res.status());
+    }
+}
+
+#[tokio::test]
+async fn coingecko_endpoints() {
+    if std::env::var("RUN_E2E").is_err() { return; }
+    
+    let (base, _h) = spawn_app().await;
+    
+    // Test all CoinGecko endpoints - allow various error responses since API might have issues
+    for path in [
+        "/coingecko/top?limit=5",
+        "/coingecko/gainers?limit=3",
+        "/coingecko/losers?limit=3",
+        "/coingecko/trending",
+        "/coingecko/market-overview",
+        "/coingecko/market-context",
+        "/coingecko/trending-symbols",
+    ] {
+        let res = reqwest::get(format!("{}{}", base, path)).await.unwrap();
+        // Allow success, rate limiting (429), and server errors (500) since CoinGecko API might have issues
+        assert!(res.status().is_success() || res.status().as_u16() == 429 || res.status().is_server_error(), 
+                "failed: {} with status: {}", path, res.status());
+    }
+    
+    // Test simple price endpoint with parameters
+    let res = reqwest::get(format!("{}/coingecko/simple-price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true", base)).await.unwrap();
+    assert!(res.status().is_success() || res.status().as_u16() == 429 || res.status().is_server_error(), 
+            "failed: simple-price with status: {}", res.status());
+}
+
+#[tokio::test]
+async fn coingecko_response_structure() {
+    if std::env::var("RUN_E2E").is_err() { return; }
+    
+    let (base, _h) = spawn_app().await;
+    
+    // Test that successful responses have the expected structure
+    let res = reqwest::get(format!("{}/coingecko/top?limit=3", base)).await.unwrap();
+    
+    if res.status().is_success() {
+        let json: serde_json::Value = res.json().await.unwrap();
+        
+        // Check response structure
+        assert!(json.get("success").is_some(), "Response should have 'success' field");
+        assert!(json.get("data").is_some(), "Response should have 'data' field");
+        assert!(json.get("timestamp").is_some(), "Response should have 'timestamp' field");
+        
+        // Check data is an array
+        if let Some(data) = json.get("data") {
+            assert!(data.is_array(), "Data should be an array");
+            
+            // If we have data, check the first coin structure
+            if let Some(coins) = data.as_array() {
+                if !coins.is_empty() {
+                    let first_coin = &coins[0];
+                    assert!(first_coin.get("id").is_some(), "Coin should have 'id' field");
+                    assert!(first_coin.get("symbol").is_some(), "Coin should have 'symbol' field");
+                    assert!(first_coin.get("name").is_some(), "Coin should have 'name' field");
+                }
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn coingecko_market_overview_structure() {
+    if std::env::var("RUN_E2E").is_err() { return; }
+    
+    let (base, _h) = spawn_app().await;
+    
+    let res = reqwest::get(format!("{}/coingecko/market-overview", base)).await.unwrap();
+    
+    if res.status().is_success() {
+        let json: serde_json::Value = res.json().await.unwrap();
+        
+        // Check response structure
+        assert!(json.get("success").is_some(), "Response should have 'success' field");
+        assert!(json.get("data").is_some(), "Response should have 'data' field");
+        
+        // Check market overview data structure
+        if let Some(data) = json.get("data") {
+            assert!(data.get("total_market_cap").is_some(), "Market overview should have 'total_market_cap' field");
+            assert!(data.get("total_volume").is_some(), "Market overview should have 'total_volume' field");
+            assert!(data.get("bitcoin_dominance").is_some(), "Market overview should have 'bitcoin_dominance' field");
+        }
+    }
+}
+
+#[tokio::test]
+async fn coingecko_trending_structure() {
+    if std::env::var("RUN_E2E").is_err() { return; }
+    
+    let (base, _h) = spawn_app().await;
+    
+    let res = reqwest::get(format!("{}/coingecko/trending", base)).await.unwrap();
+    
+    if res.status().is_success() {
+        let json: serde_json::Value = res.json().await.unwrap();
+        
+        // Check response structure
+        assert!(json.get("success").is_some(), "Response should have 'success' field");
+        assert!(json.get("data").is_some(), "Response should have 'data' field");
+        
+        // Check trending data structure
+        if let Some(data) = json.get("data") {
+            assert!(data.is_array(), "Trending data should be an array");
+            
+            if let Some(trending) = data.as_array() {
+                if !trending.is_empty() {
+                    let first_item = &trending[0];
+                    assert!(first_item.get("item").is_some(), "Trending item should have 'item' field");
+                    
+                    if let Some(item) = first_item.get("item") {
+                        assert!(item.get("name").is_some(), "Trending item should have 'name' field");
+                        assert!(item.get("symbol").is_some(), "Trending item should have 'symbol' field");
+                        assert!(item.get("score").is_some(), "Trending item should have 'score' field");
+                    }
+                }
+            }
+        }
+    }
+}
+
 

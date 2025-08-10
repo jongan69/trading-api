@@ -7,6 +7,9 @@ A lightweight HTTP API for sourcing market data and generating trading recommend
 - Data sources:
   - Finviz via `finviz_rs` (screeners, news, groups, etc.)
   - Yahoo Finance via `yahoo_finance_api` (historical quotes) and options JSON endpoint
+  - CoinGecko API (cryptocurrency market data, trending, prices)
+  - Kraken API (cryptocurrency exchange data, order books, trades)
+  - Reddit API (trending stocks)
 - Metrics engine: `src/helpers/metrics.rs` (Sharpe, Sortino, Calmar, Kelly, composite score)
 - Options recommendations: dynamic ranking with auto-sourced symbols (Finviz or Yahoo lists)
 - OpenAPI + Swagger UI: browse docs at `/docs` (served from `/openapi.json`)
@@ -28,6 +31,12 @@ APCA_API_SECRET_KEY=your_secret
 
 # Logging (optional)
 RUST_LOG=info,tower_http=info
+
+# Reddit API (optional, for trending stocks)
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+REDDIT_USERNAME=your_reddit_username
+REDDIT_PASSWORD=your_reddit_password
 ```
 
 ## 📐 Background: Key Formulas
@@ -188,6 +197,30 @@ curl "http://localhost:3000/insider?limit=3"
 - Returns group/industry metrics (preset to Industry/Valuation/PerformanceWeek/Ascending).
 - Query: `limit?` (int)
 
+### Reddit: Trending Stocks
+- Route: `/reddit/stocks`
+- Query: `limit?` (int)
+- Example:
+```bash
+curl "http://localhost:3000/reddit/stocks?limit=10"
+```
+
+### Trending: Stocks
+- Route: `/trending/stocks`
+- Query: `limit?` (int)
+- Example:
+```bash
+curl "http://localhost:3000/trending/stocks?limit=10"
+```
+
+### Trending: Crypto
+- Route: `/trending/crypto`
+- Query: `limit?` (int)
+- Example:
+```bash
+curl "http://localhost:3000/trending/crypto?limit=10"
+```
+
 ### Yahoo: Single-symbol metrics
 - Route: `/metrics/yahoo`
 - Query:
@@ -265,10 +298,202 @@ curl "http://localhost:3000/options/recommendations?side=both&min_dte=7&max_dte=
 curl "http://localhost:3000/options/recommendations?symbols=AAPL,MSFT,NVDA&side=call&min_delta=0.2&max_delta=0.6&max_spread_pct=0.1&per_symbol_limit=10&range=6mo&interval=1d&sharpe_w=0.5&sortino_w=0.4&calmar_w=0.1&limit=40"
 ```
 
+## Kraken Cryptocurrency Exchange
+
+### Kraken: Ticker Information
+- Route: `/kraken/ticker`
+- Query: `pairs?` (comma-separated, default: XBT/USD,ETH/USD)
+- Example:
+```bash
+curl "http://localhost:3000/kraken/ticker?pairs=XBT/USD,ETH/USD"
+```
+
+### Kraken: Ticker for Specific Pair
+- Route: `/kraken/ticker/{pair}`
+- Example:
+```bash
+curl "http://localhost:3000/kraken/ticker/XBT/USD"
+```
+
+### Kraken: Order Book
+- Route: `/kraken/orderbook/{pair}`
+- Query: `depth?` (int, default: 10)
+- Example:
+```bash
+curl "http://localhost:3000/kraken/orderbook/XBT/USD?depth=20"
+```
+
+### Kraken: Assets
+- Route: `/kraken/assets`
+- Returns all available assets on Kraken
+- Example:
+```bash
+curl "http://localhost:3000/kraken/assets"
+```
+
+### Kraken: Asset Pairs
+- Route: `/kraken/pairs`
+- Returns all available trading pairs on Kraken
+- Example:
+```bash
+curl "http://localhost:3000/kraken/pairs"
+```
+
+### Kraken: Recent Trades
+- Route: `/kraken/trades/{pair}`
+- Query: `limit?` (int, default: 100), `since?` (timestamp)
+- Example:
+```bash
+curl "http://localhost:3000/kraken/trades/XBT/USD?limit=50"
+```
+
+### Kraken: OHLC Data
+- Route: `/kraken/ohlc/{pair}`
+- Query: `interval?` (int, minutes: 1,5,15,30,60,240,1440,10080,21600), `since?` (timestamp)
+- Example:
+```bash
+curl "http://localhost:3000/kraken/ohlc/XBT/USD?interval=60"
+```
+
+### Kraken: Trending Crypto
+- Route: `/kraken/trending`
+- Query: `limit?` (int)
+- Example:
+```bash
+curl "http://localhost:3000/kraken/trending?limit=10"
+```
+
+### Kraken: Market Summary
+- Route: `/kraken/summary/{pair}`
+- Example:
+```bash
+curl "http://localhost:3000/kraken/summary/XBT/USD"
+```
+
+### Kraken: System Status
+- Route: `/kraken/status`
+- Returns Kraken system status
+- Example:
+```bash
+curl "http://localhost:3000/kraken/status"
+```
+
+### Kraken: Server Time
+- Route: `/kraken/time`
+- Returns Kraken server time
+- Example:
+```bash
+curl "http://localhost:3000/kraken/time"
+```
+
+## CoinGecko Cryptocurrency Market Data
+
+### CoinGecko: Top Cryptocurrencies
+- Route: `/coingecko/top`
+- Query: `limit?` (int, default: 10)
+- Returns top cryptocurrencies by market cap
+- Example:
+```bash
+curl "http://localhost:3000/coingecko/top?limit=20"
+```
+
+### CoinGecko: Top Gainers
+- Route: `/coingecko/gainers`
+- Query: `limit?` (int, default: 10)
+- Returns top gainers in the last 24 hours
+- Example:
+```bash
+curl "http://localhost:3000/coingecko/gainers?limit=5"
+```
+
+### CoinGecko: Top Losers
+- Route: `/coingecko/losers`
+- Query: `limit?` (int, default: 10)
+- Returns top losers in the last 24 hours
+- Example:
+```bash
+curl "http://localhost:3000/coingecko/losers?limit=5"
+```
+
+### CoinGecko: Trending Cryptocurrencies
+- Route: `/coingecko/trending`
+- Returns trending cryptocurrencies based on social media and search data
+- Example:
+```bash
+curl "http://localhost:3000/coingecko/trending"
+```
+
+### CoinGecko: Market Overview
+- Route: `/coingecko/market-overview`
+- Returns comprehensive market statistics including total market cap, volume, and Bitcoin dominance
+- Example:
+```bash
+curl "http://localhost:3000/coingecko/market-overview"
+```
+
+### CoinGecko: Market Context
+- Route: `/coingecko/market-context`
+- Returns formatted market context for AI analysis
+- Example:
+```bash
+curl "http://localhost:3000/coingecko/market-context"
+```
+
+### CoinGecko: Trending Symbols
+- Route: `/coingecko/trending-symbols`
+- Returns just the symbols of trending cryptocurrencies
+- Example:
+```bash
+curl "http://localhost:3000/coingecko/trending-symbols"
+```
+
+### CoinGecko: Simple Price
+- Route: `/coingecko/simple-price`
+- Query: `ids` (required, comma-separated), `vs_currencies` (required, comma-separated), `include_24hr_change?` (bool, default: false)
+- Returns simple price data for specific cryptocurrencies
+- Example:
+```bash
+curl "http://localhost:3000/coingecko/simple-price?ids=bitcoin,ethereum&vs_currencies=usd,eur&include_24hr_change=true"
+```
+
+## High Open Interest Options Contracts
+
+### High Open Interest: Single Ticker
+- Route: `/high-open-interest/{ticker}`
+- Query: `option_type?` (string, "call" or "put", default: "call")
+- Returns high open interest contracts for both short-term (1-60 days) and LEAP (1-2 years) expirations
+- Example:
+```bash
+curl "http://localhost:3000/high-open-interest/AAPL?option_type=call"
+```
+
+### High Open Interest: Batch Processing
+- Route: `/high-open-interest/batch`
+- Query: `tickers` (required, comma-separated), `option_type?` (string, "call" or "put", default: "call")
+- Returns high open interest contracts for multiple tickers
+- Example:
+```bash
+curl "http://localhost:3000/high-open-interest/batch?tickers=AAPL,TSLA,META&option_type=call"
+```
+
+## Trending Options Analysis
+
+### Trending Options: Comprehensive Analysis
+- Route: `/trending-options`
+- Query: `option_type?` (string, "call", "put", or "both", default: "call"), `rf_annual?` (float, default: 0.03), `range?` (string, default: "3mo"), `interval?` (string, default: "1d"), `sharpe_w?` (float, default: 0.4), `sortino_w?` (float, default: 0.4), `calmar_w?` (float, default: 0.2), `limit?` (int, default: 10), `min_underlying_score?` (float, default: 0.0), `min_undervalued_score?` (float, default: 0.0)
+- Returns trending tickers with comprehensive options analysis including underlying metrics and undervalued indicators
+- Example:
+```bash
+curl "http://localhost:3000/trending-options?option_type=call&limit=5&min_underlying_score=0.5"
+```
+
 ## Notes & Disclaimers
 - Yahoo options data is fetched from the unofficial options JSON. This may change or rate-limit unexpectedly.
 - Finviz data is scraped via `finviz_rs`. Respect Finviz’s robots.txt/ToS and avoid aggressive usage.
 - This software is for educational/research purposes and not financial advice. Use at your own risk.
+- CoinGecko API has rate limits (10-50 calls per minute for free tier). The API includes proper error handling for rate limiting scenarios.
+- Kraken API provides real-time cryptocurrency exchange data. Respect their rate limits and terms of service.
+- Reddit API requires authentication for trending data. Set up Reddit API credentials in your `.env` file.
 
 ## Project Structure
 ```
@@ -282,6 +507,10 @@ src/
     data.rs          # /news, /forex, /crypto, /future, /insider, /group, /reddit/stocks, /trending/stocks
     yahoo.rs         # /metrics/yahoo, /rank/yahoo, /recommendations/yahoo
     options.rs       # /options/recommendations
+    kraken.rs        # /kraken/* (ticker, orderbook, assets, trades, etc.)
+    coingecko.rs     # /coingecko/* (top, gainers, losers, trending, etc.)
+    high_open_interest.rs # /high-open-interest/* (high open interest option contracts)
+    trending_options.rs # /trending-options (trending tickers with undervalued options analysis)
   services/          # business logic
     yahoo.rs         # price fetch, latest close, metrics helpers
   sources/           # external data clients
@@ -289,10 +518,15 @@ src/
     yahoo_data.rs    # Yahoo options JSON + trending/predefined lists
     reddit_data.rs   # Reddit trending tickers
     alpaca_data.rs   # Alpaca news & options snapshots
+    kraken_data.rs   # Kraken exchange data
+    coingecko_data.rs # CoinGecko market data
   helpers/           # pure utilities
     metrics.rs       # Sharpe, Sortino, Calmar, Kelly, composite
     options.rs       # Black‑Scholes delta
     params.rs        # intervals, CSV parsing
+    trending_cryptos.rs # Aggregated trending crypto from multiple sources
+    high_open_interest.rs # High open interest option contracts from Alpaca
+    trending_options.rs # Trending tickers with options analysis and undervalued indicators
 ```
 
 ## Contributing
@@ -306,4 +540,7 @@ src/
 - Build issues: ensure a recent Rust toolchain and run `cargo clean && cargo build`.
 - Docs missing: confirm the app merged Swagger UI and visit `/docs`.
 - Network errors: Yahoo/Finviz endpoints may rate‑limit; backoff and try again.
+- CoinGecko rate limiting: Free tier allows 10-50 calls per minute. Consider upgrading to Pro for higher limits.
+- Kraken API issues: Check system status at `/kraken/status` if endpoints fail.
+- Reddit API errors: Ensure Reddit API credentials are properly configured in `.env`.
 - macOS OpenSSL issues: `reqwest` uses `rustls-tls` to avoid system OpenSSL dependencies.

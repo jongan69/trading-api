@@ -5,4 +5,5 @@ pub mod news;
 pub mod metrics;
 pub mod options;
 pub mod params;
+pub mod high_open_interest;
 

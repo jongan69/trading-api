@@ -6,6 +6,7 @@ use crate::sources;
 use crate::types::LimitQuery;
 use crate::errors::ApiError;
 use crate::state::AppState;
+use crate::helpers::trending_cryptos;
 
 pub fn router(_state: AppState) -> Router {
     Router::new()
@@ -17,6 +18,7 @@ pub fn router(_state: AppState) -> Router {
         .route("/group", get(sources::finviz_data::get_group))
         .route("/reddit/stocks", get(get_reddit_stocks))
         .route("/trending/stocks", get(get_trending_stocks))
+        .route("/trending/crypto", get(get_trending_crypto))
 }
 
 #[utoipa::path(get, path = "/news", tag = "data", responses((status = 200, description = "Aggregated news from Finviz, Reddit, and Alpaca")))]
@@ -38,6 +40,14 @@ pub async fn get_trending_stocks(Query(query): Query<LimitQuery>) -> impl IntoRe
     let LimitQuery { limit } = query;
     let mut symbols = helpers::trending_stocks::get_trending_penny_stocks().await;
     if let Some(max) = limit { if symbols.len() > max { symbols.truncate(max); } }
+    (StatusCode::OK, Json(json!({ "symbols": symbols }))).into_response()
+}
+
+#[utoipa::path(get, path = "/trending/crypto", params(LimitQuery), tag = "data", responses((status = 200, description = "Trending cryptocurrencies from multiple sources")))]
+pub async fn get_trending_crypto(Query(query): Query<LimitQuery>) -> impl IntoResponse {
+    let LimitQuery { limit } = query;
+    let limit = limit.unwrap_or(10);
+    let symbols = trending_cryptos::get_trending_cryptos_aggregated(limit).await;
     (StatusCode::OK, Json(json!({ "symbols": symbols }))).into_response()
 }
 

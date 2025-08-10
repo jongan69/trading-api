@@ -26,6 +26,41 @@ pub struct LimitQuery {
     pub limit: Option<usize>,
 }
 
+#[derive(Clone, Deserialize, Serialize, ToSchema)]
+pub struct OptionContract {
+    pub symbol: String,
+    pub underlying_symbol: String,
+    pub strike_price: f64,
+    pub expiration_date: String,
+    pub r#type: String, // "call" or "put"
+    pub open_interest: Option<u64>,
+    pub open_interest_date: Option<String>,
+    pub close_price: Option<f64>,
+    pub close_price_date: Option<String>,
+    pub ask_price: Option<f64>,
+    pub bid_price: Option<f64>,
+    pub last_price: Option<f64>,
+    pub implied_volatility: Option<f64>,
+}
+
+#[derive(Clone, Deserialize, Serialize, ToSchema)]
+pub struct OptionPrices {
+    pub ask_price: f64,
+    pub bid_price: f64,
+    pub last_price: f64,
+    pub implied_volatility: f64,
+    pub open_interest: Option<u64>,
+    pub open_interest_date: Option<String>,
+    pub close_price_date: Option<String>,
+}
+
+#[derive(Clone, Deserialize, Serialize, ToSchema)]
+pub struct HighOpenInterestResult {
+    pub short_term: Option<OptionContract>,
+    pub leap: Option<OptionContract>,
+    pub error: Option<String>,
+}
+
 #[derive(Clone, Deserialize, ToSchema, IntoParams)]
 pub struct OptionsQuery {
     pub symbol: Option<String>,
