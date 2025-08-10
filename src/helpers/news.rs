@@ -72,13 +72,13 @@ pub async fn get_news() -> Result<Value, String> {
         timeout(finviz_timeout, fetch_finviz_news(None)),
         timeout(reddit_timeout, get_reddit_news()),
         timeout(alpaca_timeout, get_alpaca_news())
-    ).map_err(|e| format!("Failed to execute news requests: {}", e))?;
+    ).map_err(|e| format!("Failed to execute news requests: {e}"))?;
 
     // Handle individual results with specific error handling
     let finviz_news = match finviz_result {
         Ok(result) => result,
         Err(e) => {
-            eprintln!("Finviz news error: {}", e);
+            eprintln!("Finviz news error: {e}");
             Value::Null
         }
     };
@@ -86,7 +86,7 @@ pub async fn get_news() -> Result<Value, String> {
     let reddit_news = match reddit_result {
         Ok(result) => result,
         Err(e) => {
-            eprintln!("Reddit news error: {}", e);
+            eprintln!("Reddit news error: {e}");
             Value::Null
         }
     };
@@ -94,7 +94,7 @@ pub async fn get_news() -> Result<Value, String> {
     let alpaca_news = match alpaca_result {
         Ok(result) => result,
         Err(e) => {
-            eprintln!("Alpaca news error: {}", e);
+            eprintln!("Alpaca news error: {e}");
             Value::Null
         }
     };
@@ -137,7 +137,7 @@ pub async fn get_news_with_retry(max_retries: u32) -> Result<Value, String> {
             Err(e) => {
                 attempts += 1;
                 if attempts >= max_retries {
-                    return Err(format!("Failed to fetch news after {} attempts: {}", max_retries, e));
+                    return Err(format!("Failed to fetch news after {max_retries} attempts: {e}"));
                 }
                 // Exponential backoff
                 let delay = Duration::from_millis(100 * 2_u64.pow(attempts - 1));

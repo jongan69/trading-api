@@ -599,14 +599,14 @@ mod tests {
         // Test that empty pairs now returns default pairs instead of error
         let result = data_source.get_tickers_async(vec![]).await;
         if let Err(e) = &result {
-            println!("Error: {}", e);
+            println!("Error: {e}");
         }
         assert!(result.is_ok());
         
         let tickers = result.unwrap();
         // Should return default pairs (8 pairs as defined in the method)
         assert!(!tickers.is_empty());
-        assert!(tickers.len() >= 1); // At least one default pair should be returned
+        assert!(!tickers.is_empty()); // At least one default pair should be returned
     }
 
     #[tokio::test]

@@ -4,6 +4,15 @@ use reqwest::{Client, ClientBuilder};
 use serde_json::Value;
 use crate::cache::{MemoryCache, cache_key};
 
+/// Type alias for cache parameter key-value pairs
+pub type CacheParams<'a> = Vec<(&'a str, &'a str)>;
+
+/// Type alias for HTTP headers
+pub type HttpHeaders = Vec<(String, String)>;
+
+/// Type alias for a single cached request configuration
+pub type CachedRequest<'a> = (&'a str, &'a str, CacheParams<'a>);
+
 #[derive(Clone)]
 pub struct OptimizedApiClient {
     client: Client,
@@ -29,14 +38,14 @@ impl OptimizedApiClient {
     pub async fn get_cached<T>(&self, 
         url: &str, 
         cache_prefix: &str, 
-        cache_params: &[(&str, &str)],
+        cache_params: &CacheParams<'_>,
         cache_ttl: Duration,
-        headers: Option<Vec<(String, String)>>
+        headers: Option<HttpHeaders>
     ) -> Result<T, String>
     where
         T: serde::de::DeserializeOwned,
     {
-        let cache_key = cache_key(cache_prefix, cache_params);
+        let cache_key = cache_key(cache_prefix, cache_params.as_slice());
         
         if let Some(cached) = self.cache.get(&cache_key).await {
             if let Ok(result) = serde_json::from_value::<T>(cached) {
@@ -79,17 +88,17 @@ impl OptimizedApiClient {
     pub async fn get_json_cached(&self, 
         url: &str,
         cache_prefix: &str,
-        cache_params: &[(&str, &str)],
+        cache_params: &CacheParams<'_>,
         cache_ttl: Duration,
-        headers: Option<Vec<(String, String)>>
+        headers: Option<HttpHeaders>
     ) -> Result<Value, String> {
         self.get_cached::<Value>(url, cache_prefix, cache_params, cache_ttl, headers).await
     }
 
     pub async fn batch_get_cached<T>(&self,
-        requests: Vec<(&str, &str, Vec<(&str, &str)>)>, // (url, cache_prefix, cache_params)
+        requests: Vec<CachedRequest<'_>>, // (url, cache_prefix, cache_params)
         cache_ttl: Duration,
-        headers: Option<Vec<(String, String)>>
+        headers: Option<HttpHeaders>
     ) -> Vec<Result<T, String>>
     where
         T: serde::de::DeserializeOwned + Send + 'static,
