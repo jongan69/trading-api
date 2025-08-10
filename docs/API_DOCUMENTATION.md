@@ -2180,3 +2180,82 @@ To get all endpoints working, ensure the following are configured:
 - Yahoo Finance API access
 - Kraken API keys for cryptocurrency data
 - CoinGecko API access (working without authentication)
+
+## News API Optimizations
+
+The news API has been significantly optimized for better performance and reliability:
+
+### Performance Improvements
+
+1. **Parallel Execution**: All three news sources (Finviz, Reddit, Alpaca) are now fetched concurrently instead of sequentially
+2. **Individual Timeouts**: Each service has its own timeout to prevent hanging on slow services
+3. **Caching**: In-memory caching with 5-minute TTL to avoid redundant API calls
+4. **Retry Logic**: Exponential backoff retry mechanism for handling transient failures
+5. **Error Isolation**: Individual service failures don't break the entire request
+
+### Available Functions
+
+#### `get_news()` - Optimized Parallel Fetch
+```rust
+pub async fn get_news() -> Result<Value, String>
+```
+- Fetches news from all sources in parallel
+- Individual timeouts: Finviz (10s), Reddit (12s), Alpaca (8s)
+- Graceful error handling for each service
+
+#### `get_news_cached()` - Cached Version
+```rust
+pub async fn get_news_cached() -> Result<Value, String>
+```
+- Returns cached data if available (5-minute TTL)
+- Falls back to fresh fetch if cache is expired
+- Significantly faster for repeated requests
+
+#### `get_news_with_retry()` - Retry Logic
+```rust
+pub async fn get_news_with_retry(max_retries: u32) -> Result<Value, String>
+```
+- Implements exponential backoff retry
+- Useful for handling transient network issues
+- Configurable retry count
+
+#### `benchmark_news_performance()` - Performance Testing
+```rust
+pub async fn benchmark_news_performance() -> Result<String, String>
+```
+- Compares sequential vs parallel vs cached performance
+- Returns detailed timing information
+- Useful for performance monitoring
+
+### Performance Expectations
+
+- **Sequential vs Parallel**: ~3x speedup
+- **Cached vs Fresh**: ~10-100x speedup for repeated requests
+- **Error Recovery**: Individual service failures don't affect others
+- **Timeout Protection**: Prevents hanging on slow services
+
+### Usage Examples
+
+```rust
+// Basic optimized fetch
+let news = get_news().await?;
+
+// Cached fetch (recommended for production)
+let news = get_news_cached().await?;
+
+// With retry logic
+let news = get_news_with_retry(3).await?;
+
+// Performance benchmark
+let benchmark = benchmark_news_performance().await?;
+println!("{}", benchmark);
+```
+
+### Configuration
+
+The optimizations use the following default settings:
+- Cache TTL: 5 minutes
+- Timeouts: Finviz (10s), Reddit (12s), Alpaca (8s)
+- Retry backoff: 100ms, 200ms, 400ms, etc.
+
+These can be adjusted by modifying the constants in the source code.

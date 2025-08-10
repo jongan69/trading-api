@@ -9,6 +9,8 @@ pub mod config;
 pub mod http_client;
 pub mod middleware;
 pub mod utils;
+pub mod cache;
+pub mod optimized_client;
 
 use axum::Router;
 use axum::middleware::from_fn;

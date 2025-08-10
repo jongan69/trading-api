@@ -15,11 +15,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_default();
 
     // Create app state
+    let cache = std::sync::Arc::new(trading_api::cache::MemoryCache::new());
     let state = AppState {
         http: reqwest::Client::new(),
         yahoo: std::sync::Arc::new(YahooConnector::new()?),
         concurrency_options: std::sync::Arc::new(tokio::sync::Semaphore::new(8)),
         config: std::sync::Arc::new(config),
+        cache: cache.clone(),
+        rate_limiter: std::sync::Arc::new(trading_api::middleware::RateLimiter::new(trading_api::middleware::RateLimitConfig::default())),
+        optimized_client: trading_api::optimized_client::OptimizedApiClient::new(cache)?,
     };
 
     // Configure analysis parameters

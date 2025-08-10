@@ -5,11 +5,15 @@ use yahoo_finance_api::YahooConnector;
 async fn spawn_app() -> (String, JoinHandle<()>) {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
+    let cache = std::sync::Arc::new(trading_api::cache::MemoryCache::new());
     let state = AppState {
         http: reqwest::Client::new(),
         yahoo: std::sync::Arc::new(YahooConnector::new().unwrap()),
         concurrency_options: std::sync::Arc::new(tokio::sync::Semaphore::new(8)),
         config: std::sync::Arc::new(trading_api::config::Config::default()),
+        cache: cache.clone(),
+        rate_limiter: std::sync::Arc::new(trading_api::middleware::RateLimiter::new(trading_api::middleware::RateLimitConfig::default())),
+        optimized_client: trading_api::optimized_client::OptimizedApiClient::new(cache).unwrap(),
     };
     let app = build_app(state).into_make_service();
     let h = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });

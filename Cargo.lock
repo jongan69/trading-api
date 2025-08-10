@@ -3694,6 +3694,7 @@ dependencies = [
  "finviz_rs",
  "futures",
  "krakenrs",
+ "lazy_static",
  "regex",
  "reqwest 0.12.22",
  "roux",

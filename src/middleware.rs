@@ -85,20 +85,12 @@ impl RateLimiter {
 }
 
 pub async fn rate_limit_middleware(
+    axum::extract::State(state): axum::extract::State<crate::state::AppState>,
     request: Request,
     next: Next,
 ) -> Result<Response, ApiError> {
-    // Extract client identifier (IP address or API key)
     let client_id = extract_client_id(&request);
-    
-    // Get rate limiter from extensions (you'll need to add this to your app state)
-    // For now, we'll use a simple approach
-    let rate_limiter = RateLimiter::new(RateLimitConfig::default());
-    
-    // Check rate limit
-    rate_limiter.check_rate_limit(&client_id).await?;
-    
-    // Continue with the request
+    state.rate_limiter.check_rate_limit(&client_id).await?;
     Ok(next.run(request).await)
 }
 

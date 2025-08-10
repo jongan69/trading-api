@@ -1,7 +1,9 @@
 use time::{Duration, OffsetDateTime};
 use yahoo_finance_api::YahooConnector;
+use serde_json::json;
 
 use crate::helpers::metrics;
+use crate::cache::{MemoryCache, cache_key};
 
 pub async fn fetch_prices_for_symbol(
     provider: &YahooConnector,
@@ -29,6 +31,40 @@ pub async fn fetch_prices_for_symbol(
         return Err("not enough quotes".to_string());
     }
     Ok(quotes.into_iter().map(|q| q.close).collect())
+}
+
+pub async fn fetch_prices_for_symbol_cached(
+    provider: &YahooConnector,
+    symbol: &str,
+    range_label: &str,
+    cache: &MemoryCache,
+) -> Result<Vec<f64>, String> {
+    let cache_key = cache_key("yahoo_prices", &[("symbol", symbol), ("range", range_label)]);
+    
+    if let Some(cached) = cache.get(&cache_key).await {
+        if let Some(prices_array) = cached.as_array() {
+            let prices: Result<Vec<f64>, _> = prices_array
+                .iter()
+                .map(|v| v.as_f64().ok_or("Invalid cached price data"))
+                .collect();
+            if let Ok(prices) = prices {
+                return Ok(prices);
+            }
+        }
+    }
+
+    let prices = fetch_prices_for_symbol(provider, symbol, range_label).await?;
+    
+    let cache_ttl = match range_label {
+        "1mo" | "3mo" => std::time::Duration::from_secs(300), // 5 minutes
+        "6mo" | "1y" => std::time::Duration::from_secs(900), // 15 minutes
+        _ => std::time::Duration::from_secs(1800), // 30 minutes
+    };
+    
+    let cache_data = json!(prices);
+    cache.set(cache_key, cache_data, cache_ttl).await;
+    
+    Ok(prices)
 }
 
 pub async fn latest_close(provider: &YahooConnector, symbol: &str) -> Result<f64, String> {

@@ -35,6 +35,15 @@ pub struct MetricsResponse {
     pub average_response_time: f64,
     pub active_connections: u64,
     pub memory_usage: MemoryUsage,
+    pub cache_stats: CacheStats,
+}
+
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct CacheStats {
+    pub size: usize,
+    pub hit_rate: f64,
+    pub total_hits: u64,
+    pub total_misses: u64,
 }
 
 #[derive(Debug, Serialize, utoipa::ToSchema)]
@@ -107,15 +116,23 @@ pub async fn system_status(
 }
 
 #[utoipa::path(get, path = "/metrics", tag = "system", responses((status = 200, description = "System metrics", body = MetricsResponse)))]
-pub async fn metrics() -> Result<impl IntoResponse, ApiError> {
-    // This is a simplified metrics endpoint
-    // In a real application, you'd want to use a metrics library like prometheus
+pub async fn metrics(
+    axum::extract::State(state): axum::extract::State<AppState>
+) -> Result<impl IntoResponse, ApiError> {
+    let cache_size = state.cache.size().await;
+    
     let body = MetricsResponse {
         total_requests: 0, // TODO: Implement request counting
         error_rate: 0.0,   // TODO: Implement error rate calculation
         average_response_time: 0.0, // TODO: Implement response time tracking
         active_connections: 0, // TODO: Implement connection tracking
         memory_usage: get_memory_usage(),
+        cache_stats: CacheStats {
+            size: cache_size,
+            hit_rate: 0.0,     // TODO: Implement hit rate tracking
+            total_hits: 0,     // TODO: Implement hit counting
+            total_misses: 0,   // TODO: Implement miss counting
+        },
     };
 
     Ok((StatusCode::OK, Json(body)))

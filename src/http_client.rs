@@ -13,9 +13,11 @@ impl ApiClient {
     pub fn new(config: Arc<Config>) -> Result<Self, String> {
         let client = ClientBuilder::new()
             .timeout(Duration::from_secs(30))
-            .connect_timeout(Duration::from_secs(10))
-            .pool_idle_timeout(Duration::from_secs(90))
-            .pool_max_idle_per_host(10)
+            .connect_timeout(Duration::from_secs(5))
+            .pool_idle_timeout(Duration::from_secs(60))
+            .pool_max_idle_per_host(20)
+            .tcp_keepalive(Duration::from_secs(30))
+            .http2_prior_knowledge()
             .build()
             .map_err(|e| format!("Failed to create HTTP client: {e}"))?;
 

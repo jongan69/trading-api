@@ -17,12 +17,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = trading_api::config::Config::from_env()
         .map_err(|e| format!("Configuration error: {e}"))?;
 
+    let cache = std::sync::Arc::new(trading_api::cache::MemoryCache::new());
+    let rate_limiter = std::sync::Arc::new(trading_api::middleware::RateLimiter::new(
+        trading_api::middleware::RateLimitConfig::default()
+    ));
+    let optimized_client = trading_api::optimized_client::OptimizedApiClient::new(cache.clone())
+        .map_err(|e| format!("Failed to create optimized client: {e}"))?;
+    
     let state = AppState {
         http: Client::new(),
         yahoo: std::sync::Arc::new(YahooConnector::new()?),
-        concurrency_options: std::sync::Arc::new(tokio::sync::Semaphore::new(8)),
+        concurrency_options: std::sync::Arc::new(tokio::sync::Semaphore::new(16)),
         config: std::sync::Arc::new(config),
+        cache: cache.clone(),
+        rate_limiter,
+        optimized_client,
     };
+
+    let cache_cleanup = cache.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(300));
+        loop {
+            interval.tick().await;
+            cache_cleanup.cleanup_expired().await;
+        }
+    });
 
     let port = state.config.server.port;
     let host = state.config.server.host.clone();

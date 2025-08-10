@@ -3,7 +3,7 @@ use futures::future::join_all;
 use serde_json::{json, Value};
 
 use crate::helpers::params::{parse_symbols_csv, periods_per_year_from_interval};
-use crate::services::yahoo::{fetch_prices_for_symbol, metrics_for_prices};
+use crate::services::yahoo::{fetch_prices_for_symbol_cached, metrics_for_prices};
 use crate::state::AppState;
 use crate::types::YahooQuery;
 use crate::errors::ApiError;
@@ -31,7 +31,7 @@ pub async fn get_metrics_yahoo(axum::extract::State(state): axum::extract::State
         return Err(ApiError::BadRequest("provide exactly one symbol in symbols".to_string()));
     }
     let symbol = &symbols[0];
-    let prices = fetch_prices_for_symbol(&state.yahoo, symbol, period_label)
+    let prices = fetch_prices_for_symbol_cached(&state.yahoo, symbol, period_label, &state.cache)
         .await
         .map_err(ApiError::Upstream)?;
     let m = metrics_for_prices(&prices, rf_annual, target_annual, periods_per_year, None);
@@ -54,11 +54,13 @@ pub async fn get_rank_yahoo(axum::extract::State(state): axum::extract::State<Ap
     }
 
     let yahoo = state.yahoo.clone();
+    let cache = state.cache.clone();
     let futures_vec = symbols.iter().map(move |sym| {
         let yahoo = yahoo.clone();
+        let cache = cache.clone();
         let sym = sym.to_string();
         async move {
-        match fetch_prices_for_symbol(&yahoo, &sym, period_label).await {
+        match fetch_prices_for_symbol_cached(&yahoo, &sym, period_label, &cache).await {
             Ok(prices) => {
                 let m = metrics_for_prices(&prices, rf_annual, target_annual, periods_per_year, None);
                 json!({ "symbol": sym, "metrics": m })
@@ -93,11 +95,13 @@ pub async fn get_recommendations_yahoo(axum::extract::State(state): axum::extrac
     }
 
     let yahoo = state.yahoo.clone();
+    let cache = state.cache.clone();
     let futures_vec = symbols.iter().map(move |sym| {
         let yahoo = yahoo.clone();
+        let cache = cache.clone();
         let sym = sym.to_string();
         async move {
-        match fetch_prices_for_symbol(&yahoo, &sym, period_label).await {
+        match fetch_prices_for_symbol_cached(&yahoo, &sym, period_label, &cache).await {
             Ok(prices) => {
                 let m = metrics_for_prices(&prices, rf_annual, target_annual, periods_per_year, None);
                 json!({ "symbol": sym, "metrics": m })

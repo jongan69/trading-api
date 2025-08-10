@@ -18,6 +18,8 @@ pub async fn get_trending_from_yahoo() -> Vec<String> {
     let client = reqwest::Client::builder()
         .default_headers(headers)
         .timeout(std::time::Duration::from_secs(10))
+        .pool_max_idle_per_host(10)
+        .tcp_keepalive(std::time::Duration::from_secs(30))
         .build()
         .unwrap();
 
