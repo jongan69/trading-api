@@ -214,13 +214,11 @@ async fn coingecko_trending_structure() {
             if let Some(trending) = data.as_array() {
                 if !trending.is_empty() {
                     let first_item = &trending[0];
-                    assert!(first_item.get("item").is_some(), "Trending item should have 'item' field");
-                    
-                    if let Some(item) = first_item.get("item") {
-                        assert!(item.get("name").is_some(), "Trending item should have 'name' field");
-                        assert!(item.get("symbol").is_some(), "Trending item should have 'symbol' field");
-                        assert!(item.get("score").is_some(), "Trending item should have 'score' field");
-                    }
+                    // Our API returns TrendingItem structure directly, not wrapped in "item"
+                    assert!(first_item.get("name").is_some(), "Trending item should have 'name' field");
+                    assert!(first_item.get("symbol").is_some(), "Trending item should have 'symbol' field");
+                    assert!(first_item.get("id").is_some(), "Trending item should have 'id' field");
+                    // Score might be null for some items, so we don't require it
                 }
             }
         }

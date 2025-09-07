@@ -6,5 +6,7 @@ pub mod kraken;
 pub mod coingecko;
 pub mod high_open_interest;
 pub mod trending_options;
+pub mod solana;
+pub mod hyperliquid;
 
 

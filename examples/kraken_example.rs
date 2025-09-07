@@ -12,13 +12,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Get system status
     println!("📊 System Status:");
     let data_source = KrakenDataSource::new_async().await?;
-    let status = data_source.get_system_status()?;
+    let status = data_source.get_system_status().await?;
     println!("{status:?}\n");
 
     // Get server time
     println!("🕐 Server Time:");
     let data_source = KrakenDataSource::new_async().await?;
-    let time = data_source.get_server_time()?;
+    let time = data_source.get_server_time().await?;
     println!("{time:?}\n");
 
     // Get ticker information for popular pairs
@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Get order book for Bitcoin
     println!("📚 Order Book (XBT/USD):");
     let data_source = KrakenDataSource::new_async().await?;
-    let order_book = data_source.get_order_book("XBT/USD", 5)?;
+    let order_book = data_source.get_order_book("XBT/USD", 5).await?;
     println!("Bids:");
     for (price, volume) in &order_book.bids[..std::cmp::min(5, order_book.bids.len())] {
         println!("  ${price:.2} - {volume:.4}");
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Get recent trades for Bitcoin
     println!("💱 Recent Trades (XBT/USD):");
     let data_source = KrakenDataSource::new_async().await?;
-    let trades = data_source.get_recent_trades("XBT/USD", None)?;
+    let trades = data_source.get_recent_trades("XBT/USD", None).await?;
     
     // Format trades output nicely
     if let Some(trades_obj) = trades.as_object() {
@@ -96,7 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Get OHLC data for Bitcoin
     println!("📊 OHLC Data (XBT/USD):");
     let data_source = KrakenDataSource::new_async().await?;
-    let ohlc = data_source.get_ohlc("XBT/USD", Some(1), None)?;
+    let ohlc = data_source.get_ohlc("XBT/USD", Some(1), None).await?;
     
     // Format OHLC output nicely
     if let Some(ohlc_obj) = ohlc.as_object() {

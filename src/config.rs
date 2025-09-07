@@ -9,6 +9,8 @@ pub struct Config {
     pub logging: LoggingConfig,
     pub rate_limiting: RateLimitConfig,
     pub retry: RetryConfig,
+    pub helius_api_key: Option<String>,
+    pub hyperliquid_testnet: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,6 +137,12 @@ impl Config {
                 .unwrap_or(true),
         };
 
+        let helius_api_key = env::var("HELIUS_API_KEY").ok();
+        let hyperliquid_testnet = env::var("HYPERLIQUID_TESTNET")
+            .unwrap_or_else(|_| "false".to_string())
+            .parse()
+            .unwrap_or(false);
+
         Ok(Config {
             alpaca,
             reddit,
@@ -142,6 +150,8 @@ impl Config {
             logging,
             rate_limiting,
             retry,
+            helius_api_key,
+            hyperliquid_testnet,
         })
     }
 
@@ -178,6 +188,8 @@ impl Default for Config {
                 max_delay_ms: 10000,
                 enabled: true,
             },
+            helius_api_key: None,
+            hyperliquid_testnet: false,
         }
     }
 }

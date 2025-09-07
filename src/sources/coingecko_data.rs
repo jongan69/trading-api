@@ -198,7 +198,7 @@ impl CoinGeckoClient {
         Ok(losers.into_iter().take(limit).collect())
     }
 
-    /// Get trending coins
+    /// Get trending coins with price data
     pub async fn get_trending_coins(&self) -> Result<Vec<TrendingItem>, String> {
         let url = format!("{}/search/trending", self.base_url);
 
@@ -231,19 +231,41 @@ impl CoinGeckoClient {
         ))
         .map_err(|e| format!("Failed to deserialize trending coins: {e}"))?;
 
-        // Convert to unified TrendingItem structure
+        // Extract coin IDs for price lookup
+        let coin_ids: Vec<String> = trending_coins
+            .iter()
+            .map(|coin| coin.item.id.clone())
+            .collect();
+
+        // Fetch price data for all trending coins
+        let price_data = self
+            .get_simple_price(&coin_ids, &vec!["usd".to_string()], true)
+            .await
+            .unwrap_or_else(|_| serde_json::json!({}));
+
+        // Convert to unified TrendingItem structure with price data
         let trending_items: Vec<TrendingItem> = trending_coins
             .into_iter()
             .map(|trending_coin| {
+                let coin_price_data = price_data.get(&trending_coin.item.id);
+                
+                let (price, price_change_24h) = if let Some(price_info) = coin_price_data {
+                    let price = price_info.get("usd").and_then(|p| p.as_f64());
+                    let change = price_info.get("usd_24h_change").and_then(|c| c.as_f64());
+                    (price, change)
+                } else {
+                    (None, None)
+                };
+
                 TrendingItem {
                     id: trending_coin.item.id.clone(),
                     symbol: trending_coin.item.symbol.clone(),
                     name: trending_coin.item.name.clone(),
-                    price: None, // CoinGecko trending doesn't provide current price
-                    price_change_24h: None,
-                    price_change_percentage_24h: None,
-                    volume: None,
-                    market_cap: None,
+                    price,
+                    price_change_24h,
+                    price_change_percentage_24h: price_change_24h,
+                    volume: None, // Simple price endpoint doesn't provide volume
+                    market_cap: None, // Simple price endpoint doesn't provide market cap
                     market_cap_rank: Some(trending_coin.item.market_cap_rank),
                     score: Some(trending_coin.item.score as f64),
                     source: "coingecko".to_string(),

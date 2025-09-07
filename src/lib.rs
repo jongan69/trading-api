@@ -8,6 +8,7 @@ pub mod errors;
 pub mod config;
 pub mod http_client;
 pub mod middleware;
+pub mod monitoring;
 pub mod utils;
 pub mod cache;
 pub mod optimized_client;
@@ -150,8 +151,10 @@ pub fn build_app(state: state::AppState) -> Router {
         .merge(routes::options::router(state.clone()))
         .merge(routes::high_open_interest::router())
         .merge(routes::trending_options::router(state.clone()))
-        .nest("/kraken", routes::kraken::router(state))
+        .nest("/kraken", routes::kraken::router(state.clone()))
         .nest("/coingecko", routes::coingecko::coingecko_routes())
+        .nest("/solana", routes::solana::router(state.clone()))
+        .nest("/hyperliquid", routes::hyperliquid::router(state))
         .route("/screener/candidates", axum::routing::get(crate::sources::finviz_data::get_screener_candidates))
         .route("/recommendations/finviz", axum::routing::get(crate::sources::finviz_data::get_recommendations_finviz))
         .merge(SwaggerUi::new("/docs").url("/openapi.json", openapi))

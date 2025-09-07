@@ -12,22 +12,28 @@ finviz_rs = "0.3.3"
 axum = "0.8.4"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = "1.0.143"
 yahoo_finance_api = "4"
-time = { version = "0.3", features = ["macros"] }
-reqwest = { version = "0.12.22", features = ["json", "rustls-tls"] }
+time = { version = "0.3.43", features = ["macros"] }
+reqwest = { version = "0.12.23", features = ["json", "rustls-tls"] }
 futures = "0.3"
 statrs = "0.18.0"
 utoipa = { version = "5.4.0", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 dotenv = "0.15.0"
-regex = "1"
-scraper = "0.23.1"
+regex = "1.11.2"
+scraper = "0.24.0"
 roux = "2"
-thiserror = "2.0.12"
+thiserror = "2.0.16"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tower-http = { version = "0.6", features = ["trace"] }
-krakenrs = { version = "5.3", features = ["ws"] }
+krakenrs = { version = "6.2.0", features = ["ws"] }
 chrono = { version = "0.4", features = ["serde"] }
 lazy_static = "1.4"
+helius = "0.3.1"  # Temporarily disabled due to dependency conflicts
+hyperliquid_rust_sdk = "0.6.0"
+# Solana dependencies for custom implementation
+solana-sdk = "3.0.0"
+solana-client = "3.0.1"
+solana-account-decoder = "3.0.1"
