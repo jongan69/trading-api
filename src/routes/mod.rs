@@ -8,5 +8,6 @@ pub mod high_open_interest;
 pub mod trending_options;
 pub mod solana;
 pub mod hyperliquid;
+pub mod pumpfun;
 
 

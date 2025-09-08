@@ -19,6 +19,12 @@ pub enum ApiError {
     ValidationError(String),
     #[error("internal server error: {0}")]
     InternalError(String),
+    #[error("external service error: {0}")]
+    External(String),
+    #[error("configuration error: {0}")]
+    Configuration(String),
+    #[error("invalid input: {0}")]
+    InvalidInput(String),
 }
 
 impl IntoResponse for ApiError {
@@ -56,6 +62,21 @@ impl IntoResponse for ApiError {
                 .into_response(),
             ApiError::InternalError(msg) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse { error: msg }),
+            )
+                .into_response(),
+            ApiError::External(msg) => (
+                StatusCode::BAD_GATEWAY,
+                Json(ErrorResponse { error: msg }),
+            )
+                .into_response(),
+            ApiError::Configuration(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse { error: msg }),
+            )
+                .into_response(),
+            ApiError::InvalidInput(msg) => (
+                StatusCode::BAD_REQUEST,
                 Json(ErrorResponse { error: msg }),
             )
                 .into_response(),

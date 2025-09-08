@@ -149,7 +149,7 @@ pub struct OptionsQuery {
     pub debug: Option<bool>,
 }
 
-#[derive(Clone, Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
 pub struct TrendingItem {
     pub id: String,
     pub symbol: String,

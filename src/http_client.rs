@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Duration;
 use reqwest::{Client, ClientBuilder};
 use crate::config::Config;
@@ -90,5 +91,3 @@ impl ApiClient {
             .map_err(|e| format!("Failed to parse JSON response: {e}"))
     }
 }
-
-use std::sync::Arc;

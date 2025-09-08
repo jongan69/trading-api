@@ -131,7 +131,7 @@ impl HyperliquidDataSource {
                 
                 Ok(markets)
             }
-            Err(e) => Err(format!("Failed to get market metadata: {}", e).into()),
+            Err(e) => Err(format!("Failed to get market metadata: {e}").into()),
         }
     }
 
@@ -141,7 +141,7 @@ impl HyperliquidDataSource {
         
         markets.into_iter()
             .find(|m| m.coin.eq_ignore_ascii_case(coin))
-            .ok_or_else(|| format!("Market not found: {}", coin).into())
+            .ok_or_else(|| format!("Market not found: {coin}").into())
     }
 
     /// Get orderbook for a specific coin
@@ -176,7 +176,7 @@ impl HyperliquidDataSource {
                 
                 Ok(candles)
             }
-            Err(e) => Err(format!("Failed to get candles: {}", e).into()),
+            Err(e) => Err(format!("Failed to get candles: {e}").into()),
         }
     }
 
@@ -205,7 +205,7 @@ impl HyperliquidDataSource {
                 
                 Ok(user_state)
             }
-            Err(e) => Err(format!("Failed to get user state: {}", e).into()),
+            Err(e) => Err(format!("Failed to get user state: {e}").into()),
         }
     }
 
@@ -249,7 +249,7 @@ impl HyperliquidDataSource {
 
                 Ok(trending_items)
             }
-            Err(e) => Err(format!("Failed to get trending DeFi assets: {}", e).into()),
+            Err(e) => Err(format!("Failed to get trending DeFi assets: {e}").into()),
         }
     }
 

@@ -77,15 +77,18 @@ pub struct HeliusDataSource {
 }
 
 impl HeliusDataSource {
+    #[allow(clippy::result_large_err)]
     pub fn new(api_key: &str, cluster: Cluster) -> HeliusResult<Self> {
         let client = Helius::new(api_key, cluster)?;
         Ok(Self { client })
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn new_mainnet(api_key: &str) -> HeliusResult<Self> {
         Self::new(api_key, Cluster::MainnetBeta)
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn new_devnet(api_key: &str) -> HeliusResult<Self> {
         Self::new(api_key, Cluster::Devnet)
     }
@@ -103,7 +106,7 @@ impl HeliusDataSource {
                 Ok(Some(solana_asset))
             }
             Ok(None) => Ok(None),
-            Err(e) => Err(format!("Failed to get asset: {}", e).into()),
+            Err(e) => Err(format!("Failed to get asset: {e}").into()),
         }
     }
 
@@ -117,15 +120,13 @@ impl HeliusDataSource {
         match self.client.rpc().get_asset_batch(request).await {
             Ok(batch_response) => {
                 let mut assets = Vec::new();
-                for asset_option in batch_response {
-                    if let Some(asset) = asset_option {
-                        let solana_asset = convert_helius_asset_to_solana_asset(asset)?;
-                        assets.push(solana_asset);
-                    }
+                for asset in batch_response.into_iter().flatten() {
+                    let solana_asset = convert_helius_asset_to_solana_asset(asset)?;
+                    assets.push(solana_asset);
                 }
                 Ok(assets)
             }
-            Err(e) => Err(format!("Failed to get assets batch: {}", e).into()),
+            Err(e) => Err(format!("Failed to get assets batch: {e}").into()),
         }
     }
 
@@ -151,7 +152,7 @@ impl HeliusDataSource {
                 }
                 Ok(assets)
             }
-            Err(e) => Err(format!("Failed to get assets by owner: {}", e).into()),
+            Err(e) => Err(format!("Failed to get assets by owner: {e}").into()),
         }
     }
 
@@ -201,7 +202,7 @@ impl HeliusDataSource {
                 }
                 Ok(assets)
             }
-            Err(e) => Err(format!("Failed to search assets: {}", e).into()),
+            Err(e) => Err(format!("Failed to search assets: {e}").into()),
         }
     }
 
@@ -262,12 +263,10 @@ impl HeliusDataSource {
                     let trending_item = TrendingItem {
                         id: asset.id.clone(),
                         symbol: asset.content.as_ref()
-                            .and_then(|c| c.metadata.symbol.as_ref())
-                            .map(|s| s.clone())
+                            .and_then(|c| c.metadata.symbol.as_ref()).cloned()
                             .unwrap_or_else(|| "UNKNOWN".to_string()),
                         name: asset.content.as_ref()
-                            .and_then(|c| c.metadata.name.as_ref())
-                            .map(|s| s.clone())
+                            .and_then(|c| c.metadata.name.as_ref()).cloned()
                             .unwrap_or_else(|| "Unknown Asset".to_string()),
                         price: None, // Would need Jupiter/price oracle integration
                         price_change_24h: None,
@@ -289,7 +288,7 @@ impl HeliusDataSource {
                 
                 Ok(trending_items)
             }
-            Err(e) => Err(format!("Failed to get trending Solana assets: {}", e).into()),
+            Err(e) => Err(format!("Failed to get trending Solana assets: {e}").into()),
         }
     }
 
@@ -313,7 +312,7 @@ impl HeliusDataSource {
 
         match self.client.parse_transactions(request).await {
             Ok(transactions) => Ok(transactions),
-            Err(e) => Err(format!("Failed to parse transactions: {}", e).into()),
+            Err(e) => Err(format!("Failed to parse transactions: {e}").into()),
         }
     }
 
@@ -331,12 +330,10 @@ fn convert_helius_asset_to_solana_asset(asset: Asset) -> Result<SolanaAsset, Box
     Ok(SolanaAsset {
         id: asset.id.clone(),
         name: asset.content.as_ref()
-            .and_then(|c| c.metadata.name.as_ref())
-            .map(|s| s.clone())
+            .and_then(|c| c.metadata.name.as_ref()).cloned()
             .unwrap_or_else(|| "Unknown Asset".to_string()),
         symbol: asset.content.as_ref()
-            .and_then(|c| c.metadata.symbol.as_ref())
-            .map(|s| s.clone())
+            .and_then(|c| c.metadata.symbol.as_ref()).cloned()
             .unwrap_or_else(|| "UNKNOWN".to_string()),
         description: asset.content.as_ref()
             .and_then(|c| c.metadata.description.as_ref())

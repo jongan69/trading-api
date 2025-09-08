@@ -63,6 +63,14 @@ use crate::middleware::cors_middleware;
         crate::routes::high_open_interest::get_high_open_interest_handler,
         crate::routes::high_open_interest::get_high_open_interest_batch_handler,
         crate::routes::trending_options::get_trending_options_handler,
+        crate::routes::pumpfun::get_trending_pumpfun,
+        crate::routes::pumpfun::get_token_info,
+        crate::routes::pumpfun::get_bonding_curve,
+        crate::routes::pumpfun::get_market_summary,
+        crate::routes::pumpfun::get_new_tokens,
+        crate::routes::pumpfun::get_top_gainers,
+        crate::routes::pumpfun::get_top_losers,
+        crate::routes::pumpfun::search_tokens,
     ),
     components(schemas(
         crate::types::HealthResponse,
@@ -97,6 +105,12 @@ use crate::middleware::cors_middleware;
         crate::routes::trending_options::TrendingOptionsQuery,
         crate::routes::trending_options::TrendingOptionsResponse,
         crate::routes::trending_options::TrendingOptionsSummary,
+        crate::routes::pumpfun::PumpFunQuery,
+        crate::routes::pumpfun::PumpFunResponse<crate::routes::pumpfun::PumpFunTrendingResponse>,
+        crate::routes::pumpfun::PumpFunTrendingResponse,
+        crate::routes::pumpfun::PumpFunMarketSummary,
+        crate::sources::pumpfun_data::TokenInfo,
+        crate::sources::pumpfun_data::BondingCurveInfo,
     )),
     tags(
         (name = "system", description = "Health & meta"),
@@ -105,7 +119,8 @@ use crate::middleware::cors_middleware;
         (name = "kraken", description = "Kraken cryptocurrency exchange data"),
         (name = "CoinGecko", description = "CoinGecko cryptocurrency data"),
         (name = "high-open-interest", description = "High open interest option contracts from Alpaca"),
-        (name = "trending-options", description = "Trending tickers with undervalued options analysis")
+        (name = "trending-options", description = "Trending tickers with undervalued options analysis"),
+        (name = "pumpfun", description = "Pump.fun meme token data and trending assets")
     )
 )]
 struct ApiDoc;
@@ -154,7 +169,8 @@ pub fn build_app(state: state::AppState) -> Router {
         .nest("/kraken", routes::kraken::router(state.clone()))
         .nest("/coingecko", routes::coingecko::coingecko_routes())
         .nest("/solana", routes::solana::router(state.clone()))
-        .nest("/hyperliquid", routes::hyperliquid::router(state))
+        .nest("/hyperliquid", routes::hyperliquid::router(state.clone()))
+        .nest("/pumpfun", routes::pumpfun::router(state))
         .route("/screener/candidates", axum::routing::get(crate::sources::finviz_data::get_screener_candidates))
         .route("/recommendations/finviz", axum::routing::get(crate::sources::finviz_data::get_recommendations_finviz))
         .merge(SwaggerUi::new("/docs").url("/openapi.json", openapi))

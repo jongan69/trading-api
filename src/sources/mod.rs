@@ -6,4 +6,5 @@ pub mod kraken_data;
 pub mod coingecko_data;
 pub mod helius_data;
 pub mod hyperliquid_data;
+pub mod pumpfun_data;
 

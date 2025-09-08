@@ -239,7 +239,7 @@ impl CoinGeckoClient {
 
         // Fetch price data for all trending coins
         let price_data = self
-            .get_simple_price(&coin_ids, &vec!["usd".to_string()], true)
+            .get_simple_price(&coin_ids, &["usd".to_string()], true)
             .await
             .unwrap_or_else(|_| serde_json::json!({}));
 

@@ -29,11 +29,16 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tower-http = { version = "0.6", features = ["trace"] }
 krakenrs = { version = "6.2.0", features = ["ws"] }
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4.42", features = ["serde"] }
 lazy_static = "1.4"
 helius = "0.3.1"  # Temporarily disabled due to dependency conflicts
 hyperliquid_rust_sdk = "0.6.0"
 # Solana dependencies for custom implementation
-solana-sdk = "3.0.0"
-solana-client = "3.0.1"
-solana-account-decoder = "3.0.1"
+solana-sdk = "2.1.16"
+solana-client = "2.1.16"
+solana-rpc-client-api = "2.1.16"
+solana-account-decoder = "2.1.16"
+jito-sdk-rust = "0.3.2"
+base64 = "0.22"
+bincode = "2.0.1"
+pumpfun = { version = "4.4.1", features = ["stream"] }

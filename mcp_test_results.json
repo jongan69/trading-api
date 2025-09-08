@@ -1,0 +1,38 @@
+{
+  "api_connection": true,
+  "endpoint_results": {
+    "/trending/stocks": true,
+    "/trending/crypto": true,
+    "/news": true,
+    "/reddit/stocks": true,
+    "/coingecko/top": false,
+    "/kraken/ticker": true
+  },
+  "tool_results": {
+    "get_trending_stocks": {
+      "success": true,
+      "data_size": 45,
+      "sample": "{'symbols': ['1.59', '9', '1', 'GPRO', '12']}"
+    },
+    "get_trending_crypto": {
+      "success": true,
+      "data_size": 56,
+      "sample": "{'symbols': ['USDQU', 'NEIRO', 'SHIBU', 'MYX', 'USDCU']}"
+    },
+    "get_market_news": {
+      "success": true,
+      "data_size": 161691,
+      "sample": "{'alpaca': {'news': [{'author': 'Erica Kollmann', 'content': '', 'created_at': '2025-09-08T20:48:38Z', 'headline': \"Planet Lab Stock Drops After Hours: Here's Why\", 'id': 47558958, 'images': [{'size':..."
+    },
+    "get_reddit_trending_stocks": {
+      "success": true,
+      "data_size": 54,
+      "sample": "{'symbols': ['BROKE', 'PAST', 'DRAFT', 'TA', 'CYCLE']}"
+    }
+  },
+  "summary": {
+    "endpoints_working": "5/6",
+    "tools_working": "4/4",
+    "all_tests_passed": false
+  }
+}

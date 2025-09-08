@@ -1,608 +1,505 @@
-# 🚀 Trading API - Production-Ready Financial Data & Options Trading API
+# Trading API MCP Server
 
-A high-performance, production-ready HTTP API for financial market data, options analysis, and trading recommendations. Built with Rust + Axum for maximum performance and reliability.
-
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/your-repo/trading-api)
-[![API Version](https://img.shields.io/badge/API-v1.0-blue)](https://github.com/your-repo/trading-api)
-[![Rust Version](https://img.shields.io/badge/rust-1.75+-orange)](https://rustup.rs/)
+A comprehensive **Model Context Protocol (MCP) server** that exposes powerful market research tools to AI agents. Built on top of a robust Rust trading API that aggregates data from multiple financial sources including traditional markets, cryptocurrencies, DeFi protocols, Solana ecosystem, and meme tokens.
 
 ## 🌟 Features
 
-- **High Performance**: Built with Rust and Axum for maximum throughput
-- **Production Ready**: Rate limiting, caching, monitoring, and comprehensive error handling
-- **Multi-Source Data**: Yahoo Finance, CoinGecko, Kraken, Finviz, Reddit integration
-- **Advanced Analytics**: Kelly Criterion, Sharpe/Sortino/Calmar ratios for risk assessment
-- **Options Trading**: Dynamic options recommendations with Greeks calculations
-- **Real-time Monitoring**: Built-in metrics, health checks, and observability
-- **OpenAPI/Swagger**: Complete API documentation at `/docs`
-- **Comprehensive Testing**: Unit, integration, and E2E test coverage
-
-## 📊 Supported Data Sources
-
-| Source | Type | Features |
-|--------|------|----------|
-| **Yahoo Finance** | Stocks/ETFs | Historical data, options chains, metrics |
-| **CoinGecko** | Cryptocurrency | Market data, trending coins, price feeds |
-| **Kraken** | Crypto Exchange | Real-time prices, order books, trades |
-| **Finviz** | Stock Screener | News, insider trading, market groups |
-| **Reddit** | Social Sentiment | Trending stocks from social media |
-| **Alpaca** | Trading Platform | High OI options, news feeds |
-| **Helius** | Solana Blockchain | NFTs, DeFi tokens, on-chain data |
-| **Hyperliquid** | DeFi Perpetuals | Perp trading, orderbooks, funding rates |
+- **40+ Market Research Tools** for AI agents via MCP
+- **Multi-Source Data Aggregation**: Stocks, crypto, DeFi, NFTs, meme tokens, news, sentiment, options
+- **Real-Time Market Data** from 15+ sources including Reddit, Finviz, CoinGecko, Kraken, Yahoo Finance, Hyperliquid, Pump.fun, Helius
+- **Comprehensive Analysis** combining traditional and DeFi markets
+- **Solana Ecosystem Integration** with NFT and token analytics
+- **DeFi Protocol Support** including Hyperliquid derivatives
+- **Meme Token Analysis** via Pump.fun integration
+- **Production-Ready** with error handling, caching, rate limiting, and comprehensive documentation
+- **Trading Capabilities** for Kraken and Alpaca (paper trading)
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Rust 1.75+ ([Install Rust](https://rustup.rs/))
-- Optional: API keys for enhanced features
-
-### Installation
-
 ```bash
-# Clone the repository
-git clone https://github.com/jongan69/trading-api
-cd trading-api
+# 1. Setup (one time)
+./setup_mcp.sh
 
-# Build the project
-cargo build --release
+# 2. Start services
+cargo run                    # Terminal 1: Rust API
+source venv/bin/activate     # Terminal 2: Python env
+python mcp_server.py         # Terminal 2: MCP server
 
-# Run the server
-cargo run --release
+# 3. Test everything works
+python test_mcp.py
 ```
 
-The API will be available at `http://localhost:3000` with Swagger UI at `http://localhost:3000/docs`.
+## 🛠️ MCP Tools Available
 
-### Environment Configuration
+### Core Market Analysis Tools
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `get_comprehensive_market_analysis` | Complete market overview across all sources | Overall market research |
+| `get_trending_stocks` | Hot stocks from Reddit, Finviz, and other sources | Trend identification |
+| `get_trending_crypto` | Trending cryptocurrencies from multiple sources | Crypto market analysis |
+| `get_market_news` | Aggregated financial news from multiple sources | Sentiment analysis |
+| `get_reddit_trending_stocks` | Reddit sentiment analysis with social indicators | Social media trends |
+| `search_market_data` | Search across all data sources | Targeted research |
 
-Create a `.env` file for enhanced features:
+### Traditional Finance Tools
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `get_yahoo_metrics` | Stock metrics, ratios, and financial data | Fundamental analysis |
+| `get_finviz_data` | Forex, futures, insider trading data | Traditional markets |
+| `get_high_open_interest` | Options contracts with high open interest | Institutional sentiment |
 
-```env
-# Server Configuration
-PORT=3000
-HOST=0.0.0.0
-RUST_LOG=info,trading_api=debug,tower_http=info
+### Cryptocurrency Exchange Tools
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `get_coingecko_data` | Comprehensive crypto data and market overview | Detailed crypto research |
+| `get_coingecko_market_context` | AI-powered market insights from CoinGecko | Market intelligence |
+| `get_coingecko_trending_symbols` | Trending crypto symbols | Opportunity identification |
+| `get_coingecko_gainers_losers` | Top crypto gainers and losers | Momentum analysis |
+| `get_kraken_ticker` | Real-time crypto prices from Kraken | Live market data |
+| `get_kraken_orderbook` | Kraken orderbook depth analysis | Liquidity analysis |
+| `get_kraken_ohlc` | OHLC candlestick data for technical analysis | Price action analysis |
+| `get_kraken_recent_trades` | Recent trading activity | Market momentum |
+| `get_kraken_assets` | Available Kraken trading assets | Asset discovery |
 
-# Alpaca Trading (Optional)
-ALPACA_API_KEY_ID=your_alpaca_key
-ALPACA_API_SECRET_KEY=your_alpaca_secret
+### DeFi Protocol Tools
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `get_hyperliquid_markets` | All Hyperliquid perpetual markets | DeFi derivatives analysis |
+| `get_hyperliquid_trending` | Trending DeFi assets on Hyperliquid | Hot DeFi opportunities |
+| `get_hyperliquid_top_volume` | Highest volume Hyperliquid markets | Activity analysis |
+| `get_hyperliquid_movers` | Top DeFi gainers and losers | Momentum tracking |
+| `get_hyperliquid_funding` | Perpetual funding rates | Market sentiment |
+| `get_hyperliquid_market_data` | Specific asset market data | Deep asset analysis |
+| `get_hyperliquid_overview` | Complete Hyperliquid market overview | DeFi market intelligence |
 
-# Reddit API (Optional)
-REDDIT_CLIENT_ID=your_reddit_client_id
-REDDIT_CLIENT_SECRET=your_reddit_client_secret
-REDDIT_USERNAME=your_reddit_username
-REDDIT_PASSWORD=your_reddit_password
+### Solana Ecosystem Tools
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `get_solana_asset` | Detailed Solana asset information | Asset research |
+| `get_solana_trending_nfts` | Trending Solana NFT collections | NFT market analysis |
+| `get_solana_trending_tokens` | Trending Solana tokens | DeFi token discovery |
+| `get_solana_top_collections` | Top NFT collections by metrics | NFT investment research |
+| `get_solana_wallet_holdings` | Wallet portfolio analysis | Whale watching |
+| `search_solana_assets` | Search assets by various criteria | Targeted Solana research |
 
-# Helius API for Solana (Optional)
-HELIUS_API_KEY=your_helius_api_key
+### Meme Token & Pump.fun Tools
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `get_pumpfun_trending` | Trending pump.fun meme tokens | Memecoin analysis |
+| `get_pumpfun_token_info` | Detailed token information | Token due diligence |
+| `get_pumpfun_market_summary` | Pump.fun market overview | Meme market intelligence |
+| `search_pumpfun_tokens` | Search for specific meme tokens | Token discovery |
+| `get_pumpfun_new_tokens` | Newly launched tokens | Fresh opportunity identification |
+| `get_pumpfun_gainers_losers` | Top meme token movers | Momentum analysis |
+| `get_pumpfun_bonding_curve` | Token bonding curve economics | Tokenomics analysis |
 
-# Hyperliquid Configuration (Optional)
-HYPERLIQUID_TESTNET=false
+### System & Monitoring Tools
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `get_system_health` | API system health status | Monitoring |
+| `get_system_metrics` | Performance metrics | System analysis |
 
-# Rate Limiting
-REQUESTS_PER_MINUTE=120
-BURST_SIZE=20
-```
+## 🤖 AI Agent Integration
 
-## 📚 API Documentation
-
-### Core Endpoints
-
-#### Health & Monitoring
-
-```bash
-# Basic health check
-curl http://localhost:3000/health
-# Response: {"status": "ok"}
-
-# Detailed system status
-curl http://localhost:3000/status
-# Returns comprehensive system health and service status
-
-# Metrics and monitoring
-curl http://localhost:3000/metrics
-# Returns performance metrics, cache stats, memory usage
-
-# Kubernetes-style health checks
-curl http://localhost:3000/ready   # Readiness probe
-curl http://localhost:3000/live    # Liveness probe
-```
-
-### Stock Market Data
-
-#### Yahoo Finance Integration
-
-```bash
-# Single stock metrics with risk analysis
-curl "http://localhost:3000/metrics/yahoo?symbols=AAPL&range=3mo&interval=1d&rf_annual=0.03"
-
-# Multiple stock ranking
-curl "http://localhost:3000/rank/yahoo?symbols=AAPL,MSFT,GOOGL,TSLA&range=6mo&interval=1d"
-
-# Stock recommendations with detailed analysis
-curl "http://localhost:3000/recommendations/yahoo?symbols=SPY,QQQ,IWM&range=1y&interval=1wk"
-```
-
-**Response Example:**
+### Claude Desktop
+Add to your MCP configuration:
 ```json
 {
-  "symbol": "AAPL",
-  "metrics": {
-    "sharpe_ratio": 1.24,
-    "sortino_ratio": 1.67,
-    "calmar_ratio": 2.14,
-    "kelly_fraction": 0.23,
-    "volatility": 0.28,
-    "max_drawdown": -0.15,
-    "cagr": 0.18,
-    "total_return": 0.12,
-    "risk_adjusted_score": 0.87
-  },
-  "price_data": {
-    "current_price": 175.23,
-    "52_week_high": 198.23,
-    "52_week_low": 124.17
+  "mcpServers": {
+    "trading-api": {
+      "command": "python",
+      "args": ["/path/to/trading-api/mcp_server.py"],
+      "transport": "stdio"
+    }
   }
 }
 ```
 
-#### Advanced Options Analysis
+### Research Agents (LangChain)
+```python
+from langchain_mcp_adapters.client import MultiServerMCPClient
 
-```bash
-# Dynamic options recommendations
-curl "http://localhost:3000/options/recommendations?symbols=AAPL,MSFT&side=call&min_dte=7&max_dte=45&min_volume=100&min_oi=500&max_spread_pct=0.1&limit=20"
-
-# Auto-sourced symbols from Finviz screener
-curl "http://localhost:3000/options/recommendations?signal=TopGainers&screener=Performance&symbols_limit=50&side=both&min_delta=0.3&max_delta=0.7&limit=25"
-
-# High open interest analysis
-curl "http://localhost:3000/high-open-interest/TSLA?option_type=call"
-curl "http://localhost:3000/high-open-interest/batch?tickers=AAPL,TSLA,NVDA&option_type=put"
-```
-
-**Options Response Example:**
-```json
-[
-  {
-    "symbol": "AAPL",
-    "contract": "AAPL240315C00180000",
-    "side": "call",
-    "strike": 180.0,
-    "expiration": "2024-03-15",
-    "dte_days": 23,
-    "premium": 4.25,
-    "mid": 4.20,
-    "spread": 0.10,
-    "spread_pct": 0.024,
-    "implied_vol": 0.28,
-    "delta": 0.52,
-    "leverage": 41.2,
-    "volume": 1250,
-    "open_interest": 8940,
-    "strike_ratio": 1.03,
-    "score": 0.89,
-    "underlying_metrics": {
-      "sharpe_ratio": 1.24,
-      "composite_score": 0.87
+mcp_config = {
+    "trading_api": {
+        "command": "python",
+        "args": ["/path/to/trading-api/mcp_server.py"],
+        "transport": "stdio"
     }
-  }
-]
+}
+
+client = MultiServerMCPClient(mcp_config)
+tools = await client.get_tools()
 ```
 
-### Cryptocurrency Data
+## 📊 Example AI Research Queries
 
-#### CoinGecko Market Data
+### Traditional Markets
+- *"Give me a comprehensive analysis of current market conditions"*
+- *"What are the top trending stocks and what's driving their movement?"*
+- *"Analyze Tesla across all data sources - news, sentiment, technicals"*
+- *"What is the options market telling us about institutional positioning?"*
+- *"Show me insider trading activity and high open interest options"*
 
+### Cryptocurrency & DeFi
+- *"What are the hottest DeFi opportunities on Hyperliquid right now?"*
+- *"Compare Bitcoin funding rates across perpetual markets"*
+- *"Show me trending Solana tokens with high volume"*
+- *"Analyze the correlation between traditional crypto and DeFi markets"*
+- *"What's driving the current crypto market sentiment?"*
+
+### Meme Tokens & Emerging Markets
+- *"Find newly launched meme tokens on pump.fun with strong momentum"*
+- *"Analyze bonding curve economics for trending pump.fun tokens"*
+- *"What are the top Solana NFT collections by volume today?"*
+- *"Show me whale wallet activity in the Solana ecosystem"*
+
+### Cross-Market Analysis
+- *"How are traditional stocks correlating with crypto markets today?"*
+- *"Compare meme token performance against traditional crypto"*
+- *"Identify arbitrage opportunities between centralized and DeFi markets"*
+- *"Analyze market sentiment across Reddit, news, and on-chain data"*
+
+## 🏗️ Architecture
+
+```
+AI Agent <--MCP--> Python MCP Server <--HTTP--> Rust Trading API <--> Data Sources
+                                                      |
+                                                      ├── Traditional Finance
+                                                      │   ├── Yahoo Finance
+                                                      │   ├── Finviz  
+                                                      │   ├── Reddit
+                                                      │   └── Alpaca
+                                                      │
+                                                      ├── Cryptocurrency
+                                                      │   ├── CoinGecko
+                                                      │   ├── Kraken
+                                                      │   └── Helius
+                                                      │
+                                                      ├── DeFi Protocols
+                                                      │   └── Hyperliquid
+                                                      │
+                                                      ├── Solana Ecosystem
+                                                      │   ├── Helius API
+                                                      │   ├── Jito
+                                                      │   └── Direct RPC
+                                                      │
+                                                      └── Meme Tokens
+                                                          └── Pump.fun
+```
+
+### Components
+- **Rust API**: High-performance data aggregation with caching, rate limiting, and error handling
+- **Python MCP Server**: Standards-compliant MCP interface with 40+ specialized tools
+- **Data Sources**: 15+ integrated sources spanning traditional finance, crypto, DeFi, and emerging markets
+- **Trading Integration**: Paper and live trading capabilities via Kraken and Alpaca
+- **Caching Layer**: Intelligent caching to optimize API calls and reduce latency
+- **Monitoring**: Built-in health checks and performance metrics
+
+## 📁 Repository Structure
+
+```
+trading-api/
+├── src/                          # Rust trading API source code
+│   ├── routes/                   # API endpoint handlers
+│   │   ├── data.rs              # Traditional market data
+│   │   ├── coingecko.rs         # CoinGecko crypto data
+│   │   ├── kraken.rs            # Kraken exchange
+│   │   ├── hyperliquid.rs       # DeFi derivatives
+│   │   ├── solana.rs            # Solana ecosystem
+│   │   ├── pumpfun.rs           # Meme token data
+│   │   ├── yahoo.rs             # Yahoo Finance
+│   │   ├── options.rs           # Options analysis
+│   │   ├── high_open_interest.rs # High OI analysis
+│   │   └── system.rs            # Health & monitoring
+│   ├── sources/                 # Data source integrations
+│   │   ├── finviz_data.rs       # Finviz scraping
+│   │   ├── reddit_data.rs       # Reddit sentiment
+│   │   ├── yahoo_data.rs        # Yahoo Finance API
+│   │   ├── coingecko_data.rs    # CoinGecko API
+│   │   ├── kraken_data.rs       # Kraken API
+│   │   ├── hyperliquid_data.rs  # Hyperliquid API
+│   │   ├── helius_data.rs       # Solana data via Helius
+│   │   ├── pumpfun_data.rs      # Pump.fun integration
+│   │   ├── alpaca_data.rs       # Options data
+│   │   └── jito_data.rs         # Jito MEV data
+│   ├── helpers/                 # Analysis and aggregation logic
+│   │   ├── trending_stocks.rs   # Stock trend analysis
+│   │   ├── trending_cryptos.rs  # Crypto trend analysis
+│   │   ├── news.rs              # News aggregation
+│   │   ├── metrics.rs           # Performance metrics
+│   │   └── options.rs           # Options analysis
+│   ├── trading/                 # Trading execution modules
+│   │   ├── kraken_trading.rs    # Kraken trading
+│   │   └── alpaca_trading.rs    # Alpaca trading
+│   ├── middleware/              # HTTP middleware
+│   ├── types.rs                 # Type definitions
+│   ├── errors.rs                # Error handling
+│   ├── config.rs                # Configuration management
+│   ├── cache.rs                 # Caching layer
+│   └── lib.rs                   # Main library
+├── examples/                     # Usage examples
+│   ├── coingecko_example.rs     # CoinGecko integration
+│   ├── kraken_example.rs        # Kraken integration
+│   ├── high_open_interest_example.rs # Options analysis
+│   └── trending_options_example.rs   # Trending analysis
+├── docs/                        # Comprehensive documentation
+│   ├── API_DOCUMENTATION.md    # Complete API reference
+│   ├── QUICK_START.md           # Quick setup guide
+│   ├── MCP_SERVER_README.md     # MCP server details
+│   ├── PRODUCTION_READINESS.md  # Production deployment
+│   └── TROUBLESHOOTING.md       # Common issues
+├── tests/                       # Test suites
+│   ├── integration_tests.rs     # Integration tests
+│   └── e2e.rs                   # End-to-end tests
+├── mcp_server.py                # MCP server implementation (40+ tools)
+├── research_agent_example.py    # AI research agent example
+├── requirements.txt             # Python dependencies
+├── setup_mcp.sh                 # Automated setup script
+├── test_mcp.py                  # MCP server test suite
+├── Cargo.toml                   # Rust dependencies
+└── README.md                    # This comprehensive guide
+```
+
+## 🔧 Installation & Setup
+
+### Prerequisites
+- Rust 1.70+
+- Python 3.8+
+- pip and virtual environment support
+
+### Automated Setup
 ```bash
-# Top cryptocurrencies by market cap
-curl "http://localhost:3000/coingecko/top?limit=20"
-
-# Top gainers and losers
-curl "http://localhost:3000/coingecko/gainers?limit=10"
-curl "http://localhost:3000/coingecko/losers?limit=10"
-
-# Trending cryptocurrencies
-curl "http://localhost:3000/coingecko/trending"
-
-# Market overview and context
-curl "http://localhost:3000/coingecko/market-overview"
-curl "http://localhost:3000/coingecko/market-context"
-
-# Price data for specific coins
-curl "http://localhost:3000/coingecko/simple-price?ids=bitcoin,ethereum,cardano&vs_currencies=usd,eur&include_24hr_change=true"
+# Clone and setup everything
+git clone <your-repo>
+cd trading-api
+./setup_mcp.sh
 ```
 
-#### Kraken Exchange Data
-
+### Manual Setup
 ```bash
-# Real-time ticker data
-curl "http://localhost:3000/kraken/ticker"
-curl "http://localhost:3000/kraken/ticker/XBT/USD"
+# Rust dependencies
+cargo build
 
-# Order book depth
-curl "http://localhost:3000/kraken/orderbook/XBT/USD?depth=20"
-
-# Recent trades and OHLC data
-curl "http://localhost:3000/kraken/trades/XBT/USD?limit=50"
-curl "http://localhost:3000/kraken/ohlc/XBT/USD?interval=60"
-
-# Available assets and pairs
-curl "http://localhost:3000/kraken/assets"
-curl "http://localhost:3000/kraken/pairs"
-
-# System status and server time
-curl "http://localhost:3000/kraken/status"
-curl "http://localhost:3000/kraken/time"
-```
-
-### Market Intelligence
-
-#### Finviz Market Data
-
-```bash
-# Latest financial news
-curl "http://localhost:3000/news?limit=20"
-
-# Market sectors and groups
-curl "http://localhost:3000/forex?limit=10"
-curl "http://localhost:3000/crypto?limit=15"
-curl "http://localhost:3000/future?limit=12"
-
-# Insider trading activity
-curl "http://localhost:3000/insider?limit=25"
-
-# Stock screener candidates
-curl "http://localhost:3000/screener/candidates?signal=TopGainers&order=Volume&screener=Performance&limit=50"
-
-# Automated recommendations from screener
-curl "http://localhost:3000/recommendations/finviz?signal=NewHigh&order=MarketCap&screener=Financial&limit=20&range=6mo"
-```
-
-#### Social Sentiment
-
-```bash
-# Reddit trending stocks
-curl "http://localhost:3000/reddit/stocks?limit=15"
-
-# Aggregated trending from multiple sources
-curl "http://localhost:3000/trending/stocks?limit=25"
-curl "http://localhost:3000/trending/crypto?limit=20"
-```
-
-### Advanced Analytics
-
-#### Trending Options Analysis
-
-```bash
-# Comprehensive trending options with undervalued analysis
-curl "http://localhost:3000/trending-options?option_type=call&limit=10&min_underlying_score=0.5"
-
-# Multi-timeframe analysis
-curl "http://localhost:3000/trending-options?option_type=both&range=6mo&interval=1d&sharpe_w=0.4&sortino_w=0.4&calmar_w=0.2&limit=20"
-```
-
-## 🔧 Configuration & Deployment
-
-### Production Configuration
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  trading-api:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - RUST_LOG=info
-      - PORT=3000
-      - REQUESTS_PER_MINUTE=300
-      - BURST_SIZE=50
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-```
-
-### Kubernetes Deployment
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: trading-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: trading-api
-  template:
-    metadata:
-      labels:
-        app: trading-api
-    spec:
-      containers:
-      - name: trading-api
-        image: trading-api:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: PORT
-          value: "3000"
-        - name: RUST_LOG
-          value: "info"
-        livenessProbe:
-          httpGet:
-            path: /live
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: trading-api-service
-spec:
-  selector:
-    app: trading-api
-  ports:
-  - port: 80
-    targetPort: 3000
-  type: LoadBalancer
+# Python environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ## 🧪 Testing
 
-### Running Tests
-
 ```bash
-# Unit tests
+# Test Rust API
 cargo test
 
-# Integration tests
-RUN_INTEGRATION=1 cargo test --test integration_tests
+# Test MCP server integration
+python test_mcp.py
 
-# End-to-end tests (requires network access)
-RUN_E2E=1 cargo test --test e2e
-
-# All tests
-RUN_E2E=1 RUN_INTEGRATION=1 cargo test
+# Test with sample research queries
+python research_agent_example.py
 ```
 
-### Test Coverage
+## 📝 Environment Variables
 
-The API includes comprehensive test coverage:
-
-- **Unit Tests**: Core business logic and utilities
-- **Integration Tests**: API endpoints and middleware
-- **E2E Tests**: Real network calls to external APIs
-- **Load Tests**: Performance and concurrency testing
-- **Error Handling Tests**: Edge cases and failure scenarios
-
-### Performance Testing
-
+Create a `.env` file:
 ```bash
-# Load testing with Apache Bench
-ab -n 1000 -c 10 http://localhost:3000/health
+# API Keys (optional, for enhanced data)
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+ALPHAVANTAGE_API_KEY=your_alphavantage_key
 
-# Stress testing specific endpoints
-ab -n 500 -c 5 "http://localhost:3000/coingecko/top?limit=10"
+# Server Configuration
+SERVER_HOST=localhost
+SERVER_PORT=3000
+
+# For research agent example
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
 ```
 
-## 📊 Monitoring & Observability
+## 🚦 API Endpoints (Rust Server)
 
-### Built-in Metrics
+The Rust API provides comprehensive endpoints organized by category:
 
-The API provides comprehensive monitoring out of the box:
+### System & Health
+- `GET /health` - System health check
+- `GET /metrics` - Performance metrics
+- `GET /docs` - Interactive API documentation (Swagger UI)
 
-- **Request Metrics**: Total requests, success rate, response times
-- **Endpoint Analytics**: Per-endpoint performance and error rates
-- **System Health**: Memory usage, cache statistics, uptime
-- **External Services**: Health checks for all integrated APIs
-- **Rate Limiting**: Request quotas and throttling statistics
+### Traditional Markets
+- `GET /trending/stocks` - Trending stocks from multiple sources
+- `GET /reddit/stocks` - Reddit sentiment analysis
+- `GET /news` - Aggregated financial news
+- `GET /yahoo/metrics` - Yahoo Finance stock metrics
+- `GET /forex` - Forex market data (Finviz)
+- `GET /insider` - Insider trading activity
+- `GET /high-open-interest` - High open interest options
 
-### Prometheus Integration
+### Cryptocurrency Exchanges
+- `GET /trending/crypto` - Trending cryptocurrencies
+- `GET /coingecko/top` - Top cryptocurrencies (CoinGecko)
+- `GET /coingecko/trending` - Trending crypto symbols
+- `GET /coingecko/gainers` - Top crypto gainers
+- `GET /coingecko/losers` - Top crypto losers
+- `GET /coingecko/market-context` - AI-powered market insights
+- `GET /kraken/ticker` - Kraken ticker data
+- `GET /kraken/orderbook/{pair}` - Orderbook depth
+- `GET /kraken/ohlc/{pair}` - OHLC candlestick data
+- `GET /kraken/trades/{pair}` - Recent trades
+- `GET /kraken/assets` - Available trading assets
 
-```bash
-# Metrics endpoint (Prometheus compatible)
-curl http://localhost:3000/metrics
+### DeFi Protocols
+- `GET /hyperliquid/markets` - All Hyperliquid markets
+- `GET /hyperliquid/trending` - Trending DeFi assets
+- `GET /hyperliquid/volume/top` - Highest volume markets
+- `GET /hyperliquid/movers` - Top gainers/losers
+- `GET /hyperliquid/funding` - Funding rates
+- `GET /hyperliquid/market/{coin}` - Specific market data
+- `GET /hyperliquid/stats/overview` - Market overview
 
-# Custom metrics for monitoring
-curl http://localhost:3000/status | jq '.services'
-```
+### Solana Ecosystem
+- `GET /solana/asset/{asset_id}` - Asset details
+- `GET /solana/nfts/trending` - Trending NFT collections
+- `GET /solana/tokens/trending` - Trending tokens
+- `GET /solana/collections/top` - Top NFT collections
+- `GET /solana/wallet/{address}/holdings` - Wallet analysis
+- `GET /solana/assets/search` - Asset search
 
-### Logging
+### Meme Tokens (Pump.fun)
+- `GET /pumpfun/trending` - Trending meme tokens
+- `GET /pumpfun/token/{mint}` - Token details
+- `GET /pumpfun/market-summary` - Market overview
+- `GET /pumpfun/search/{query}` - Token search
+- `GET /pumpfun/new-tokens` - Newly launched tokens
+- `GET /pumpfun/top-gainers` - Top gaining tokens
+- `GET /pumpfun/top-losers` - Top losing tokens
+- `GET /pumpfun/bonding-curve/{mint}` - Bonding curve data
 
-Structured logging with configurable levels:
+**📖 Complete Documentation:** Available at `http://localhost:3000/docs` when running the server.
+**🔍 OpenAPI Spec:** Available at `http://localhost:3000/openapi.json`
 
-```bash
-# Development
-RUST_LOG=debug cargo run
+## 🔍 Data Sources
 
-# Production
-RUST_LOG=info,trading_api=warn cargo run
+### Traditional Finance
+| Source | Data Type | Update Frequency | Features |
+|--------|-----------|------------------|----------|
+| **Yahoo Finance** | Stock prices, metrics, financial ratios | Real-time/Daily | Comprehensive stock analysis |
+| **Finviz** | Stocks, forex, futures, insider trading | Real-time | Market screening, insider activity |
+| **Reddit** | Social sentiment, trending discussions | Real-time | Social sentiment analysis |
+| **Alpaca** | Options data, high open interest | Real-time | Options market intelligence |
 
-# Detailed tracing
-RUST_LOG=trace,tower_http=debug cargo run
-```
+### Cryptocurrency Exchanges  
+| Source | Data Type | Update Frequency | Features |
+|--------|-----------|------------------|----------|
+| **CoinGecko** | Crypto prices, market data, trending | Real-time | Comprehensive crypto analytics |
+| **Kraken** | Exchange data, orderbooks, trades | Real-time | Professional trading data |
 
-## 🔒 Security & Rate Limiting
+### DeFi Protocols
+| Source | Data Type | Update Frequency | Features |
+|--------|-----------|------------------|----------|
+| **Hyperliquid** | Perpetual markets, funding rates | Real-time | DeFi derivatives intelligence |
 
-### Rate Limiting
+### Solana Ecosystem
+| Source | Data Type | Update Frequency | Features |
+|--------|-----------|------------------|----------|
+| **Helius** | NFTs, tokens, wallet analysis | Real-time | Comprehensive Solana data |
+| **Jito** | MEV data, block analysis | Real-time | MEV and validator insights |
+| **Direct RPC** | On-chain data, program accounts | Real-time | Raw blockchain data |
 
-Built-in rate limiting protects against abuse:
+### Meme Tokens & Emerging Markets
+| Source | Data Type | Update Frequency | Features |
+|--------|-----------|------------------|----------|
+| **Pump.fun** | Meme tokens, bonding curves | Real-time | Complete meme token ecosystem |
 
-- **Default**: 120 requests/minute per IP
-- **Burst**: 20 requests in quick succession
-- **Configurable**: Via environment variables
-- **Headers**: Rate limit status in response headers
+### Data Quality & Reliability
+- **Redundancy**: Multiple sources for critical data points
+- **Validation**: Cross-source data validation and consistency checks  
+- **Fallback**: Graceful degradation when sources are unavailable
+- **Rate Limiting**: Intelligent rate limiting to respect API limits
+- **Caching**: Smart caching to reduce API calls and improve performance
+
+## 🛡️ Security & Performance
+
+### Performance Optimizations
+- **Intelligent Caching**: Multi-layer caching system with TTL-based invalidation
+- **Connection Pooling**: Efficient HTTP connection management
+- **Concurrent Processing**: Async/await throughout for maximum throughput
+- **Rate Limiting**: Adaptive rate limiting per data source
+- **Request Batching**: Batch similar requests to reduce API calls
+- **Response Compression**: Gzip compression for API responses
 
 ### Security Features
+- **Input Validation**: Comprehensive validation of all user inputs
+- **Sanitization**: Data sanitization to prevent injection attacks
+- **CORS Protection**: Configurable CORS policies
+- **Error Handling**: Secure error messages without information leakage
+- **API Key Management**: Secure handling of external API credentials
+- **Request Logging**: Comprehensive request/response logging for audit trails
 
-- **Input Validation**: All parameters validated and sanitized
-- **Error Handling**: No sensitive information in error responses
-- **CORS**: Configurable cross-origin resource sharing
-- **Health Checks**: Separate endpoints for monitoring vs. functionality
-
-## 📈 Performance
-
-### Benchmarks
-
-- **Throughput**: 10,000+ requests/second on modern hardware
-- **Latency**: <10ms average response time for cached data
-- **Memory**: <100MB base memory footprint
-- **Concurrency**: Handles 1000+ concurrent connections
-
-### Optimization Features
-
-- **Intelligent Caching**: Automatic caching of expensive API calls
-- **Connection Pooling**: Reused HTTP connections to external APIs
-- **Async Processing**: Non-blocking I/O for all operations
-- **Request Deduplication**: Prevents duplicate expensive operations
+### Reliability & Monitoring
+- **Health Checks**: Built-in health monitoring for all components
+- **Circuit Breakers**: Automatic circuit breakers for failing services
+- **Graceful Degradation**: Continue operating with reduced functionality
+- **Metrics Collection**: Performance metrics and analytics
+- **Error Recovery**: Automatic retry logic with exponential backoff
+- **Service Discovery**: Dynamic service endpoint management
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-
-```bash
-# Install Rust and dependencies
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source ~/.cargo/env
-
-# Clone and setup
-git clone https://github.com/jongan69/trading-api
-cd trading-api
-cargo build
-
-# Run in development mode
-RUST_LOG=debug cargo run
-
-# Run tests
-cargo test
-```
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## ⚠️ Disclaimer
+## 🆘 Support & Troubleshooting
 
-This software is for educational and research purposes only. It is not financial advice and should not be used as the sole basis for investment decisions. Always consult with qualified financial professionals before making investment decisions.
+### Common Issues
 
-## 🆘 Support
+**"Failed to connect to API"**
+- Ensure Rust API is running: `cargo run`
+- Check port 3000 is available: `curl http://localhost:3000/health`
 
-- **Documentation**: Available at `/docs` when running the server
-- **Issues**: [GitHub Issues](https://github.com/your-repo/trading-api/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/trading-api/discussions)
+**"Tool not found"**
+- Verify MCP server is running: `python mcp_server.py`
+- Check tool names match exactly
 
-## 🌟 Solana Blockchain Integration
+**"Authentication errors"**
+- Set API keys in `.env` file
+- For research agent example, set `OPENAI_API_KEY` and `ANTHROPIC_API_KEY`
 
-### Solana Asset Management
+### Getting Help
 
-```bash
-# Get single Solana asset/NFT by mint address
-curl "http://localhost:3000/solana/asset/11111111111111111111111111111112"
+- 📖 Check the documentation in this README
+- 🧪 Run the test suite: `python test_mcp.py`
+- 🔍 Check server logs for detailed error information
+- 📝 Review the example integration: `research_agent_example.py`
 
-# Get all assets owned by a wallet
-curl "http://localhost:3000/solana/assets/owner/11111111111111111111111111111112?limit=20"
+## 🎯 What You Get
 
-# Get assets by creator address
-curl "http://localhost:3000/solana/assets/creator/CRE8TorAddress123456789?limit=15"
+✅ **Production-ready MCP server** with 40+ specialized market research tools  
+✅ **Comprehensive market coverage** across traditional finance, crypto, DeFi, and emerging markets  
+✅ **Multi-source data aggregation** from 15+ major financial platforms  
+✅ **Real-time market intelligence** with intelligent caching and rate limiting  
+✅ **Solana ecosystem integration** including NFTs, tokens, and wallet analysis  
+✅ **DeFi protocol support** with Hyperliquid derivatives and funding rates  
+✅ **Meme token analytics** via Pump.fun integration with bonding curve analysis  
+✅ **Trading capabilities** for both paper and live trading (Kraken, Alpaca)  
+✅ **Easy AI integration** with any MCP-compatible system (Claude, LangChain, etc.)  
+✅ **Comprehensive documentation** with examples, troubleshooting, and production guides  
+✅ **Automated setup** with testing tools and health monitoring  
+✅ **Enterprise-ready** with error handling, logging, metrics, and security features  
 
-# Search assets with custom criteria
-curl "http://localhost:3000/solana/assets/search?owner=OWNER123&creator=CREATOR456&limit=10"
+### 🚀 Transform Your AI Agents Into:
+- **Sophisticated Market Researchers** with access to traditional and emerging markets
+- **DeFi Intelligence Analysts** tracking derivatives and funding rates
+- **Meme Token Specialists** analyzing bonding curves and social sentiment  
+- **Cross-Market Arbitrage Detectors** identifying opportunities across ecosystems
+- **Portfolio Analysts** with wallet tracking and whale watching capabilities
+- **News & Sentiment Analyzers** combining social media and traditional news sources
 
-# Get token accounts by mint or owner
-curl "http://localhost:3000/solana/token-accounts?mint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-
-# Get transaction signatures for an asset
-curl "http://localhost:3000/solana/signatures/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263?limit=50"
-
-# Get trending Solana ecosystem assets
-curl "http://localhost:3000/solana/trending?limit=25"
-curl "http://localhost:3000/solana/nfts/trending?limit=15"
-curl "http://localhost:3000/solana/tokens/trending?limit=20"
-curl "http://localhost:3000/solana/collections/top?limit=10"
-```
-
-## ⚡ DeFi Perpetual Trading (Hyperliquid)
-
-### Market Data & Analytics
-
-```bash
-# Get all available perpetual markets
-curl "http://localhost:3000/hyperliquid/markets"
-
-# Get specific market data
-curl "http://localhost:3000/hyperliquid/market/BTC"
-curl "http://localhost:3000/hyperliquid/market/ETH"
-
-# Get real-time orderbook
-curl "http://localhost:3000/hyperliquid/orderbook/BTC?depth=20"
-
-# Get recent trades and candlestick data
-curl "http://localhost:3000/hyperliquid/trades/ETH?limit=50"
-curl "http://localhost:3000/hyperliquid/candles/BTC?interval=1h&start_time=1703000000000&end_time=1703123456000"
-
-# Get funding rates and trending DeFi assets
-curl "http://localhost:3000/hyperliquid/funding"
-curl "http://localhost:3000/hyperliquid/trending?limit=15"
-
-# Get top markets by volume and biggest movers
-curl "http://localhost:3000/hyperliquid/volume/top?limit=20"
-curl "http://localhost:3000/hyperliquid/movers?limit=10"
-
-# Get comprehensive market overview
-curl "http://localhost:3000/hyperliquid/stats/overview"
-```
-
-### Advanced DeFi Features
-
-```bash
-# Get user portfolio and positions (requires wallet address)
-curl "http://localhost:3000/hyperliquid/user/0x742d35Cc6634C0532925a3b8D8B7Af4E1f1e6e2F"
-```
-
-**Example DeFi Market Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "coin": "BTC",
-    "sz_decimals": 5,
-    "max_leverage": 20,
-    "only_isolated": false,
-    "name": "BTC-USD",
-    "index_price": 43250.0,
-    "mark_price": 43254.32,
-    "mid_price": 43252.15,
-    "funding": 0.0001,
-    "open_interest": 120000000.0,
-    "volume_24h": 1200000000.0,
-    "price_change_percentage_24h": 2.56
-  },
-  "timestamp": 1703123456,
-  "source": "hyperliquid"
-}
-```
-
----
-
-**Built with ❤️ in Rust** | **Complete TradFi + DeFi + Solana Data API** | **Production-Ready** | **Open Source & Free**
+**Ready to revolutionize your AI trading and research capabilities?** This comprehensive trading API MCP server provides everything you need to build intelligent, data-driven trading agents that understand both traditional and emerging financial markets.
