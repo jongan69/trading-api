@@ -3,7 +3,7 @@ const STORAGE_KEY = 'trading_api_base_url';
 
 export function getBaseUrl() {
   const params = new URLSearchParams(window.location.search);
-  return params.get('api') || localStorage.getItem(STORAGE_KEY) || 'http://localhost:3000';
+  return params.get('api') || localStorage.getItem(STORAGE_KEY) || 'https://trading-api-wcv5.onrender.com';
 }
 
 export function setBaseUrl(url) {
