@@ -3,8 +3,6 @@ use scraper::{Html, Selector};
 use std::collections::HashSet;
 // use yahoo_finance_api;
 use serde_json::Value;
-use reqwest::Client;
-
 pub async fn get_trending_from_yahoo() -> Vec<String> {
     let mut trending_stocks: HashSet<String> = HashSet::new();
 
@@ -50,7 +48,7 @@ pub async fn yahoo_predefined_list(scr_id: &str, count: usize) -> Result<Vec<Str
     let url = format!(
         "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?count={count}&scrIds={scr_id}"
     );
-    let resp = Client::new()
+    let resp = crate::http::shared_client()
         .get(url)
         .header("accept", "application/json")
         .send()
@@ -84,7 +82,7 @@ pub async fn yahoo_trending(region: &str, count: usize) -> Result<Vec<String>, S
     let url = format!(
         "https://query1.finance.yahoo.com/v1/finance/trending/{region}?count={count}"
     );
-    let resp = Client::new()
+    let resp = crate::http::shared_client()
         .get(url)
         .header("accept", "application/json")
         .send()
@@ -116,7 +114,7 @@ pub async fn yahoo_trending(region: &str, count: usize) -> Result<Vec<String>, S
 
 pub async fn fetch_yahoo_options_chain(symbol: &str) -> Result<Value, String> {
     let url = format!("https://query2.finance.yahoo.com/v7/finance/options/{symbol}");
-    let resp = Client::new()
+    let resp = crate::http::shared_client()
         .get(url)
         .header("accept", "application/json")
         .send()

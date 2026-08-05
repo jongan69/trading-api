@@ -80,6 +80,8 @@ pub async fn get_high_open_interest_batch_handler(
             StatusCode::BAD_REQUEST,
             Json(crate::types::ErrorResponse {
                 error: "No tickers provided".to_string(),
+                code: Some("BAD_REQUEST".into()),
+                timestamp: chrono::Utc::now().timestamp(),
             }),
         ));
     }

@@ -20,25 +20,21 @@ futures = "0.3"
 statrs = "0.18.0"
 utoipa = { version = "5.4.0", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
-dotenv = "0.15.0"
+dotenvy = "0.15"
 regex = "1.11.2"
 scraper = "0.24.0"
 roux = "2"
 thiserror = "2.0.16"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tower = "0.5"
 tower-http = { version = "0.6", features = ["trace"] }
-krakenrs = { version = "6.2.0", features = ["ws"] }
+krakenrs = "6.2.0"
 chrono = { version = "0.4.42", features = ["serde"] }
-lazy_static = "1.4"
-helius = "0.3.1"  # Temporarily disabled due to dependency conflicts
+helius = "0.3.1"
 hyperliquid_rust_sdk = "0.6.0"
-# Solana dependencies for custom implementation
-solana-sdk = "2.1.16"
-solana-client = "2.1.16"
-solana-rpc-client-api = "2.1.16"
-solana-account-decoder = "2.1.16"
-jito-sdk-rust = "0.3.2"
-base64 = "0.22"
-bincode = "2.0.1"
-pumpfun = { version = "4.4.1", features = ["stream"] }
+
+[dev-dependencies]
+dotenvy = "0.15"
+http-body-util = "0.1"
+tower = "0.5"

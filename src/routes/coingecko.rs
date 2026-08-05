@@ -1,17 +1,17 @@
 use axum::{
     extract::Query,
-    http::StatusCode,
     response::Json,
     routing::get,
     Router,
 };
 use crate::sources::coingecko_data::{
-    CoinGeckoCoin, MarketOverview, get_top_coins, get_top_gainers, 
+    CoinGeckoCoin, MarketOverview, get_top_coins, get_top_gainers,
     get_top_losers, get_trending_coins, get_market_overview, get_market_context,
     get_trending_cryptos, get_simple_price
 };
 use crate::types::TrendingItem;
 use crate::{CoinGeckoQuery, SimplePriceQuery, CoinGeckoResponse, MarketContextResponse};
+use crate::errors::ApiError;
 use serde_json::Value;
 
 /// Get top cryptocurrencies by market cap
@@ -27,7 +27,7 @@ use serde_json::Value;
 )]
 pub async fn get_top_cryptocurrencies(
     Query(query): Query<CoinGeckoQuery>,
-) -> Result<Json<CoinGeckoResponse<Vec<CoinGeckoCoin>>>, (StatusCode, String)> {
+) -> Result<Json<CoinGeckoResponse<Vec<CoinGeckoCoin>>>, ApiError> {
     let limit = query.limit.unwrap_or(10);
     
     match get_top_coins(limit).await {
@@ -39,7 +39,7 @@ pub async fn get_top_cryptocurrencies(
             };
             Ok(Json(response))
         }
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+        Err(e) => Err(ApiError::Upstream(e)),
     }
 }
 
@@ -56,7 +56,7 @@ pub async fn get_top_cryptocurrencies(
 )]
 pub async fn get_top_gainers_route(
     Query(query): Query<CoinGeckoQuery>,
-) -> Result<Json<CoinGeckoResponse<Vec<CoinGeckoCoin>>>, (StatusCode, String)> {
+) -> Result<Json<CoinGeckoResponse<Vec<CoinGeckoCoin>>>, ApiError> {
     let limit = query.limit.unwrap_or(10);
     
     match get_top_gainers(limit).await {
@@ -68,7 +68,7 @@ pub async fn get_top_gainers_route(
             };
             Ok(Json(response))
         }
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+        Err(e) => Err(ApiError::Upstream(e)),
     }
 }
 
@@ -85,7 +85,7 @@ pub async fn get_top_gainers_route(
 )]
 pub async fn get_top_losers_route(
     Query(query): Query<CoinGeckoQuery>,
-) -> Result<Json<CoinGeckoResponse<Vec<CoinGeckoCoin>>>, (StatusCode, String)> {
+) -> Result<Json<CoinGeckoResponse<Vec<CoinGeckoCoin>>>, ApiError> {
     let limit = query.limit.unwrap_or(10);
     
     match get_top_losers(limit).await {
@@ -97,7 +97,7 @@ pub async fn get_top_losers_route(
             };
             Ok(Json(response))
         }
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+        Err(e) => Err(ApiError::Upstream(e)),
     }
 }
 
@@ -111,7 +111,7 @@ pub async fn get_top_losers_route(
     ),
     tag = "CoinGecko"
 )]
-pub async fn get_trending_cryptocurrencies() -> Result<Json<CoinGeckoResponse<Vec<TrendingItem>>>, (StatusCode, String)> {
+pub async fn get_trending_cryptocurrencies() -> Result<Json<CoinGeckoResponse<Vec<TrendingItem>>>, ApiError> {
     match get_trending_coins().await {
         Ok(coins) => {
             let response = CoinGeckoResponse {
@@ -121,7 +121,7 @@ pub async fn get_trending_cryptocurrencies() -> Result<Json<CoinGeckoResponse<Ve
             };
             Ok(Json(response))
         }
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+        Err(e) => Err(ApiError::Upstream(e)),
     }
 }
 
@@ -135,7 +135,7 @@ pub async fn get_trending_cryptocurrencies() -> Result<Json<CoinGeckoResponse<Ve
     ),
     tag = "CoinGecko"
 )]
-pub async fn get_market_overview_route() -> Result<Json<CoinGeckoResponse<MarketOverview>>, (StatusCode, String)> {
+pub async fn get_market_overview_route() -> Result<Json<CoinGeckoResponse<MarketOverview>>, ApiError> {
     match get_market_overview().await {
         Ok(overview) => {
             let response = CoinGeckoResponse {
@@ -145,7 +145,7 @@ pub async fn get_market_overview_route() -> Result<Json<CoinGeckoResponse<Market
             };
             Ok(Json(response))
         }
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+        Err(e) => Err(ApiError::Upstream(e)),
     }
 }
 
@@ -159,7 +159,7 @@ pub async fn get_market_overview_route() -> Result<Json<CoinGeckoResponse<Market
     ),
     tag = "CoinGecko"
 )]
-pub async fn get_market_context_route() -> Result<Json<MarketContextResponse>, (StatusCode, String)> {
+pub async fn get_market_context_route() -> Result<Json<MarketContextResponse>, ApiError> {
     match get_market_context().await {
         Ok(context) => {
             let response = MarketContextResponse {
@@ -169,7 +169,7 @@ pub async fn get_market_context_route() -> Result<Json<MarketContextResponse>, (
             };
             Ok(Json(response))
         }
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+        Err(e) => Err(ApiError::Upstream(e)),
     }
 }
 
@@ -183,7 +183,7 @@ pub async fn get_market_context_route() -> Result<Json<MarketContextResponse>, (
     ),
     tag = "CoinGecko"
 )]
-pub async fn get_trending_symbols() -> Result<Json<CoinGeckoResponse<Vec<String>>>, (StatusCode, String)> {
+pub async fn get_trending_symbols() -> Result<Json<CoinGeckoResponse<Vec<String>>>, ApiError> {
     match get_trending_cryptos().await {
         Ok(symbols) => {
             let response = CoinGeckoResponse {
@@ -193,7 +193,7 @@ pub async fn get_trending_symbols() -> Result<Json<CoinGeckoResponse<Vec<String>
             };
             Ok(Json(response))
         }
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+        Err(e) => Err(ApiError::Upstream(e)),
     }
 }
 
@@ -210,7 +210,7 @@ pub async fn get_trending_symbols() -> Result<Json<CoinGeckoResponse<Vec<String>
 )]
 pub async fn get_simple_price_route(
     Query(query): Query<SimplePriceQuery>,
-) -> Result<Json<CoinGeckoResponse<Value>>, (StatusCode, String)> {
+) -> Result<Json<CoinGeckoResponse<Value>>, ApiError> {
     let ids: Vec<String> = query.ids.split(',').map(|s| s.trim().to_string()).collect();
     let vs_currencies: Vec<String> = query.vs_currencies.split(',').map(|s| s.trim().to_string()).collect();
     let include_24hr_change = query.include_24hr_change.unwrap_or(false);
@@ -224,7 +224,7 @@ pub async fn get_simple_price_route(
             };
             Ok(Json(response))
         }
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+        Err(e) => Err(ApiError::Upstream(e)),
     }
 }
 

@@ -23,7 +23,7 @@ pub fn router(_state: AppState) -> Router {
 
 #[utoipa::path(get, path = "/news", tag = "data", responses((status = 200, description = "Aggregated news from Finviz, Reddit, and Alpaca")))]
 pub async fn news_aggregated() -> Result<impl IntoResponse, ApiError> {
-    let v = helpers::news::get_news().await.map_err(ApiError::Upstream)?;
+    let v = helpers::news::get_news_cached().await.map_err(ApiError::Upstream)?;
     Ok((StatusCode::OK, Json(v)))
 }
 

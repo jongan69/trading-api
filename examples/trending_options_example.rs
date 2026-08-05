@@ -6,7 +6,7 @@ use yahoo_finance_api::YahooConnector;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load environment variables
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
 
     println!("=== Trending Options Analysis Example ===\n");
 
@@ -23,7 +23,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config: std::sync::Arc::new(config),
         cache: cache.clone(),
         rate_limiter: std::sync::Arc::new(trading_api::middleware::RateLimiter::new(trading_api::middleware::RateLimitConfig::default())),
-        optimized_client: trading_api::optimized_client::OptimizedApiClient::new(cache)?,
     };
 
     // Configure analysis parameters

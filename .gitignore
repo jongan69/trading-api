@@ -1,3 +1,16 @@
 /target
 .env
+__pycache__/
+*.pyc
+.venv/
 venv/
+.DS_Store
+*.log
+api.log
+.idea/
+.vscode/
+.pytest_cache/
+*.pem
+*.key
+*.local
+mcp_test_results.json

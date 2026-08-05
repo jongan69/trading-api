@@ -901,7 +901,7 @@ class TradingApiMcpServer:
             "range": range_param,
             "interval": interval
         }
-        data = await self._make_api_request("/yahoo/metrics", params)
+        data = await self._make_api_request("/metrics/yahoo", params)
         
         response = {
             "success": True,
@@ -1039,11 +1039,11 @@ class TradingApiMcpServer:
         return [types.TextContent(type="text", text=json.dumps(analysis_data, indent=2))]
     
     async def _search_market_data(self, args: Dict[str, Any]) -> List[types.TextContent]:
-        """Search market data across sources"""
-        query = args["query"]
+        """Search market data across sources by filtering results against the query."""
+        query = args["query"].lower().strip()
         sources = args.get("sources", ["all"])
         limit = args.get("limit", 25)
-        
+
         search_results = {
             "success": True,
             "tool": "search_market_data",
@@ -1051,44 +1051,67 @@ class TradingApiMcpServer:
             "sources_searched": sources,
             "timestamp": asyncio.get_event_loop().time(),
             "results": {},
-            "parameters": {"query": query, "sources": sources, "limit": limit}
+            "match_counts": {},
         }
-        
+
+        def _filter_by_query(items, key_fn, extra_fields=None):
+            """Return items whose key_fn(item) contains query as substring."""
+            if not query:
+                return items
+            matched = []
+            for item in items:
+                key = key_fn(item).lower()
+                if query in key:
+                    entry = item if isinstance(item, dict) else {"match": item}
+                    if extra_fields and isinstance(item, dict):
+                        for f in extra_fields:
+                            if f in item:
+                                entry[f] = item[f]
+                    matched.append(entry)
+            return matched[:limit]
+
         try:
-            # This is a simplified search - in practice, you'd implement
-            # more sophisticated search across your API endpoints
             if "stocks" in sources or "all" in sources:
-                # Search trending stocks
                 stocks_data = await self._make_api_request("/trending/stocks", {"limit": 100})
-                # Filter results based on query (simplified)
-                search_results["results"]["stocks"] = {
-                    "note": "Search functionality requires API-side implementation",
-                    "query": query,
-                    "available_data": stocks_data
-                }
-            
+                symbols = stocks_data.get("symbols", []) if isinstance(stocks_data, dict) else []
+                filtered = _filter_by_query(symbols, lambda s: s)
+                search_results["results"]["stocks"] = filtered
+                search_results["match_counts"]["stocks"] = len(filtered)
+
             if "crypto" in sources or "all" in sources:
-                # Search crypto data
                 crypto_data = await self._make_api_request("/trending/crypto", {"limit": 100})
-                search_results["results"]["crypto"] = {
-                    "note": "Search functionality requires API-side implementation",
-                    "query": query,
-                    "available_data": crypto_data
-                }
-            
+                cryptos = crypto_data.get("data", []) if isinstance(crypto_data, dict) else []
+                filtered = _filter_by_query(
+                    cryptos,
+                    lambda c: c.get("symbol", c.get("name", "")),
+                    extra_fields=["symbol", "name", "price"],
+                )
+                search_results["results"]["crypto"] = filtered
+                search_results["match_counts"]["crypto"] = len(filtered)
+
             if "news" in sources or "all" in sources:
-                # Search news
-                news_data = await self._make_api_request("/news", {"limit": 100})
-                search_results["results"]["news"] = {
-                    "note": "Search functionality requires API-side implementation",
-                    "query": query,
-                    "available_data": news_data
-                }
-                
+                news_data = await self._make_api_request("/news", {})
+                # Flatten news from finviz/reddit/alpaca into a combined list if available
+                flat_news = []
+                if isinstance(news_data, dict):
+                    for source_key in ("finviz", "reddit", "alpaca"):
+                        source_news = news_data.get(source_key, {})
+                        if isinstance(source_news, dict):
+                            articles = source_news.get("news", source_news.get("data", []))
+                            if isinstance(articles, list):
+                                flat_news.extend(articles)
+                filtered = _filter_by_query(
+                    flat_news,
+                    lambda n: n.get("headline", n.get("title", n.get("symbol", ""))),
+                    extra_fields=["headline", "title", "symbol", "source", "url"],
+                )
+                search_results["results"]["news"] = filtered
+                search_results["match_counts"]["news"] = len(filtered)
+
         except Exception as e:
             logger.error(f"Error in search: {e}")
             search_results["results"]["error"] = str(e)
-        
+
         return [types.TextContent(type="text", text=json.dumps(search_results, indent=2))]
     
     async def _get_pumpfun_trending(self, args: Dict[str, Any]) -> List[types.TextContent]:

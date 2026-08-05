@@ -50,9 +50,6 @@ pub fn router(state: AppState) -> Router {
         .route("/token-accounts", get(get_token_accounts))
         .route("/signatures/{asset_id}", get(get_asset_signatures))
         .route("/trending", get(get_trending_solana))
-        .route("/nfts/trending", get(get_trending_nfts))
-        .route("/tokens/trending", get(get_trending_tokens))
-        .route("/collections/top", get(get_top_collections))
         .route("/wallet/{address}/holdings", get(get_wallet_holdings))
         .route("/program/{program_id}/accounts", get(get_program_accounts))
         .with_state(state)
@@ -354,61 +351,6 @@ pub async fn get_trending_solana(
     };
     
     Ok((StatusCode::OK, Json(response)))
-}
-
-/// Get trending NFTs
-#[utoipa::path(
-    get,
-    path = "/solana/nfts/trending",
-    params(
-        ("limit" = Option<u32>, Query, description = "Number of trending NFTs to return")
-    ),
-    tag = "solana",
-    responses((status = 200, description = "Trending Solana NFTs", body = SolanaResponse<Vec<TrendingItem>>))
-)]
-pub async fn get_trending_nfts(
-    State(state): State<AppState>,
-    Query(params): Query<std::collections::HashMap<String, String>>,
-) -> Result<impl IntoResponse, ApiError> {
-    // For now, use the same trending assets endpoint but filter for NFTs
-    get_trending_solana(State(state), Query(params)).await
-}
-
-/// Get trending tokens
-#[utoipa::path(
-    get,
-    path = "/solana/tokens/trending",
-    params(
-        ("limit" = Option<u32>, Query, description = "Number of trending tokens to return")
-    ),
-    tag = "solana",
-    responses((status = 200, description = "Trending Solana tokens", body = SolanaResponse<Vec<TrendingItem>>))
-)]
-pub async fn get_trending_tokens(
-    State(state): State<AppState>,
-    Query(params): Query<std::collections::HashMap<String, String>>,
-) -> Result<impl IntoResponse, ApiError> {
-    // For now, use the same trending assets endpoint but filter for tokens
-    get_trending_solana(State(state), Query(params)).await
-}
-
-/// Get top NFT collections
-#[utoipa::path(
-    get,
-    path = "/solana/collections/top",
-    params(
-        ("limit" = Option<u32>, Query, description = "Number of top collections to return")
-    ),
-    tag = "solana",
-    responses((status = 200, description = "Top Solana NFT collections", body = SolanaResponse<Vec<TrendingItem>>))
-)]
-pub async fn get_top_collections(
-    State(state): State<AppState>,
-    Query(params): Query<std::collections::HashMap<String, String>>,
-) -> Result<impl IntoResponse, ApiError> {
-    // This would require collection-specific logic
-    // For now, return trending assets as placeholder
-    get_trending_solana(State(state), Query(params)).await
 }
 
 /// Get wallet token holdings summary

@@ -240,7 +240,7 @@ pub async fn get_screener_candidates(Query(q): Query<ScreenerQuery>) -> impl Int
         }
         Err(err) => (
             StatusCode::INTERNAL_SERVER_ERROR,
-                Json(crate::types::ErrorResponse { error: format!("failed to scrape finviz screener: {err}") }),
+                Json(crate::types::ErrorResponse { error: format!("failed to scrape finviz screener: {err}"), code: Some("UPSTREAM_ERROR".into()), timestamp: chrono::Utc::now().timestamp() }),
         )
             .into_response(),
     }
@@ -286,7 +286,7 @@ pub async fn get_recommendations_finviz(Query(q): Query<FinvizRecommendationsQue
         Err(err) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(crate::types::ErrorResponse { error: format!("screener error: {err}") }),
+                Json(crate::types::ErrorResponse { error: format!("screener error: {err}"), code: Some("UPSTREAM_ERROR".into()), timestamp: chrono::Utc::now().timestamp() }),
             )
                 .into_response();
         }

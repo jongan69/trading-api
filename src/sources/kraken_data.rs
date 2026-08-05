@@ -105,27 +105,54 @@ struct OHLCResult {
     last: u64,
 }
 
+// Raw REST ticker response — krakenrs 6.2.0 AssetTickerInfo exposes only a/b/c fields
+// (no v/h/l/o), so we parse the raw JSON ourselves.
+#[derive(Debug, Deserialize)]
+struct KrakenTickerResponse {
+    error: Vec<String>,
+    result: Option<std::collections::HashMap<String, TickerData>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)] // All fields needed for correct deserialization; v/h/l/o/c are read
+struct TickerData {
+    /// Ask: [price, whole_lot_vol, lot_vol]
+    a: Vec<String>,
+    /// Bid: [price, whole_lot_vol, lot_vol]
+    b: Vec<String>,
+    /// Last trade closed: [price, lot_vol]
+    c: Vec<String>,
+    /// Volume: [today, last_24h]
+    v: Vec<String>,
+    /// VWAP: [today, last_24h]
+    p: Vec<String>,
+    /// Number of trades: [today, last_24h]
+    t: Vec<u64>,
+    /// Low: [today, last_24h]
+    l: Vec<String>,
+    /// High: [today, last_24h]
+    h: Vec<String>,
+    /// Today's opening price
+    o: String,
+}
+
 pub struct KrakenDataSource {
     http_client: reqwest::Client,
 }
 
 impl KrakenDataSource {
     pub async fn new_async() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-        // Create the data source in a blocking task to avoid runtime issues
-        tokio::task::spawn_blocking(|| {
-            let http_client = reqwest::Client::new();
-            
-            Ok::<Self, Box<dyn std::error::Error + Send + Sync>>(Self { http_client })
-        })
-        .await
-        .map_err(|e| format!("Task join error: {e}"))?
+        let http_client = crate::http::shared_client().clone();
+        Ok(Self { http_client })
     }
 
 
 
-    /// Get ticker information for specified pairs
+    /// Get ticker information for specified pairs via the Kraken REST API.
+    ///
+    /// Uses raw HTTP (not `krakenrs`) because the crate's `AssetTickerInfo` only
+    /// exposes `a`/`b`/`c` — we need `v`/`h`/`l`/`o` for correct 24h metrics.
     pub async fn get_tickers_async(&self, pairs: Vec<String>) -> Result<Vec<KrakenTicker>, Box<dyn std::error::Error + Send + Sync>> {
-        // If no pairs specified, use default popular pairs
         let pairs_to_fetch = if pairs.is_empty() {
             vec![
                 "XXBTZUSD".to_string(),
@@ -140,51 +167,47 @@ impl KrakenDataSource {
         } else {
             pairs
         };
-        
-        // Convert pair formats to ensure compatibility with krakenrs library
-        let converted_pairs: Vec<String> = pairs_to_fetch.iter().map(|pair| {
-            // Handle common pair format conversions
-            match pair.as_str() {
-                "XXBTZUSD" => "XBTUSD".to_string(),
-                "XETHZUSD" => "ETHUSD".to_string(),
-                "XXBTZEUR" => "XBTEUR".to_string(),
-                "XETHZEUR" => "ETHEUR".to_string(),
-                _ => pair.clone(),
-            }
-        }).collect();
-        
-        // Use blocking task to avoid runtime issues
-        let ticker_response = tokio::task::spawn_blocking(move || {
-            let config = KrakenRestConfig::default();
-            let rest_api = KrakenRestAPI::try_from(config)
-                .map_err(|e| format!("Failed to create Kraken API: {e}"))?;
-            rest_api.ticker(converted_pairs)
-                .map_err(|e| format!("Failed to get ticker data: {e}"))
-        })
-        .await
-        .map_err(|e| format!("Task join error: {e}"))??;
-        let mut tickers = Vec::new();
 
-        for (pair_name, ticker_data) in ticker_response {
-            // Extract data from the ticker response
-            let current_price = ticker_data.c.first()
+        // Kraken REST API uses the full pair names (e.g. XXBTZUSD, not XBTUSD).
+        let joined = pairs_to_fetch.join(",");
+        let url = format!("https://api.kraken.com/0/public/Ticker?pair={joined}");
+
+        let resp = self.http_client.get(&url).send().await
+            .map_err(|e| format!("HTTP request failed: {e}"))?;
+
+        let text = resp.text().await
+            .map_err(|e| format!("Failed to read response: {e}"))?;
+
+        let parsed: KrakenTickerResponse = serde_json::from_str(&text)
+            .map_err(|e| format!("Failed to parse ticker JSON: {e}"))?;
+
+        if !parsed.error.is_empty() {
+            return Err(format!("Kraken API error: {:?}", parsed.error).into());
+        }
+
+        let result = parsed.result
+            .ok_or::<Box<dyn std::error::Error + Send + Sync>>("No result in ticker response".into())?;
+
+        let mut tickers = Vec::new();
+        for (pair_name, td) in result {
+            let current_price = td.c.first()
                 .and_then(|s| s.parse::<f64>().ok())
                 .unwrap_or(0.0);
-            
-            let volume_24h = ticker_data.a.get(1)
+
+            let volume_24h = td.v.get(1)
                 .and_then(|s| s.parse::<f64>().ok())
                 .unwrap_or(0.0);
-            
-            let high_24h = ticker_data.a.get(1)
+
+            let high_24h = td.h.get(1)
                 .and_then(|s| s.parse::<f64>().ok())
                 .unwrap_or(0.0);
-            
-            let low_24h = ticker_data.a.get(1)
+
+            let low_24h = td.l.get(1)
                 .and_then(|s| s.parse::<f64>().ok())
                 .unwrap_or(0.0);
-            
-            let open_price = ticker_data.a.first().unwrap_or(&"0".to_string()).parse::<f64>().unwrap_or(0.0);
-            
+
+            let open_price = td.o.parse::<f64>().unwrap_or(0.0);
+
             let change_24h = current_price - open_price;
             let change_pct_24h = if open_price > 0.0 {
                 (change_24h / open_price) * 100.0
@@ -192,7 +215,7 @@ impl KrakenDataSource {
                 0.0
             };
 
-            let ticker = KrakenTicker {
+            tickers.push(KrakenTicker {
                 pair: pair_name,
                 price: current_price,
                 volume: volume_24h,
@@ -200,8 +223,7 @@ impl KrakenDataSource {
                 low_24h,
                 change_24h,
                 change_pct_24h,
-            };
-            tickers.push(ticker);
+            });
         }
 
         Ok(tickers)
@@ -588,5 +610,48 @@ mod tests {
         let data_source = KrakenDataSource::new_async().await.unwrap();
         let result = data_source.get_server_time().await;
         assert!(result.is_ok());
+    }
+
+    /// Verify that ticker JSON parsing maps fields correctly.
+    /// This test would have caught the bug where high/low/volume/open were all
+    /// read from the ask-side array.
+    #[test]
+    fn test_ticker_parsing_maps_correct_fields() {
+        let fixture = r#"{
+            "error": [],
+            "result": {
+                "XXBTZUSD": {
+                    "a": ["62000.1", "10", "10.000"],
+                    "b": ["61900.5", "5", "5.000"],
+                    "c": ["61950.0", "0.002"],
+                    "v": ["1050.123", "2800.456"],
+                    "p": ["61980.0", "61920.0"],
+                    "t": [1234, 5678],
+                    "l": ["61800.0", "61500.0"],
+                    "h": ["62150.0", "62300.0"],
+                    "o": "61900.0"
+                }
+            }
+        }"#;
+
+        let parsed: KrakenTickerResponse = serde_json::from_str(fixture).unwrap();
+        let result = parsed.result.unwrap();
+        let td = result.get("XXBTZUSD").unwrap();
+
+        // Current price from c[0]
+        assert_eq!(td.c.first().and_then(|s| s.parse::<f64>().ok()), Some(61950.0));
+        // Volume 24h from v[1]
+        assert_eq!(td.v.get(1).and_then(|s| s.parse::<f64>().ok()), Some(2800.456));
+        // High 24h from h[1]
+        assert_eq!(td.h.get(1).and_then(|s| s.parse::<f64>().ok()), Some(62300.0));
+        // Low 24h from l[1]
+        assert_eq!(td.l.get(1).and_then(|s| s.parse::<f64>().ok()), Some(61500.0));
+        // Open from o (bare string, not a list)
+        assert_eq!(td.o.parse::<f64>().ok(), Some(61900.0));
+
+        // The old bug would have set volume=10.0 (a[1]), high=10.0, low=10.0,
+        // and open=62000.1 (a[0]). Verify those are NOT the values used:
+        assert_ne!(td.v.get(1).and_then(|s| s.parse::<f64>().ok()), Some(10.0));
+        assert_ne!(td.a.first().and_then(|s| s.parse::<f64>().ok()), td.o.parse::<f64>().ok());
     }
 }

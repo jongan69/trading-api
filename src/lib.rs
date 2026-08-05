@@ -6,14 +6,11 @@ pub mod services;
 pub mod types;
 pub mod errors;
 pub mod config;
-pub mod http_client;
+pub mod http;
 pub mod middleware;
-pub mod monitoring;
-pub mod utils;
 pub mod cache;
-pub mod optimized_client;
 
-use axum::Router;
+use axum::{Router, Json};
 use axum::middleware::from_fn;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -157,8 +154,24 @@ pub struct MarketContextResponse {
     pub timestamp: i64,
 }
 
+async fn not_found_handler() -> (axum::http::StatusCode, Json<types::ErrorResponse>) {
+    (
+        axum::http::StatusCode::NOT_FOUND,
+        Json(types::ErrorResponse {
+            error: "Not found".to_string(),
+            code: Some("NOT_FOUND".to_string()),
+            timestamp: chrono::Utc::now().timestamp(),
+        }),
+    )
+}
+
 pub fn build_app(state: state::AppState) -> Router {
     let openapi = ApiDoc::openapi();
+    let rate_limit_enabled = state.config.rate_limiting.enabled;
+    let rate_limit_layer = middleware::RateLimitLayer::new(
+        state.rate_limiter.clone(),
+        rate_limit_enabled,
+    );
     Router::new()
         .merge(routes::system::router(state.clone()))
         .merge(routes::data::router(state.clone()))
@@ -174,6 +187,8 @@ pub fn build_app(state: state::AppState) -> Router {
         .route("/screener/candidates", axum::routing::get(crate::sources::finviz_data::get_screener_candidates))
         .route("/recommendations/finviz", axum::routing::get(crate::sources::finviz_data::get_recommendations_finviz))
         .merge(SwaggerUi::new("/docs").url("/openapi.json", openapi))
+        .fallback(not_found_handler)
+        .layer(rate_limit_layer)
         .layer(from_fn(cors_middleware))
         .layer(TraceLayer::new_for_http())
 }

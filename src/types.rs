@@ -9,6 +9,16 @@ pub struct HealthResponse {
 #[derive(Serialize, ToSchema)]
 pub struct ErrorResponse {
     pub error: String,
+    pub code: Option<String>,
+    pub timestamp: i64,
+}
+
+/// Generic success envelope used by most endpoints.
+#[derive(Serialize, ToSchema)]
+pub struct ApiResponse<T: Serialize + ToSchema> {
+    pub success: bool,
+    pub data: T,
+    pub timestamp: i64,
 }
 
 #[derive(Deserialize, ToSchema, IntoParams, Clone)]

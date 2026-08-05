@@ -1,4 +1,5 @@
 use axum::{
+    body::Body,
     extract::Request,
     http::{HeaderValue, StatusCode},
     middleware::Next,
@@ -6,11 +7,15 @@ use axum::{
 };
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::task::{Context, Poll};
 use tokio::sync::RwLock;
 use std::time::{Duration, Instant};
 use serde_json::json;
 
 use crate::errors::ApiError;
+
+use tower::Layer;
+use tower::Service;
 
 #[derive(Debug, Clone)]
 pub struct RateLimitConfig {
@@ -198,10 +203,91 @@ pub fn create_error_response(status: StatusCode, message: &str) -> Response {
         "status": status.as_u16(),
         "timestamp": chrono::Utc::now().to_rfc3339(),
     });
-    
+
     Response::builder()
         .status(status)
         .header("Content-Type", "application/json")
         .body(axum::body::Body::from(serde_json::to_string(&body).unwrap()))
         .unwrap()
+}
+
+// ── Rate‑limit tower Layer ──────────────────────────────────────────────
+//
+// Wraps every request and checks the shared `RateLimiter` *before* axum
+// State extraction, so it works regardless of how the sub‑routers are
+// composed.
+
+#[derive(Clone)]
+pub struct RateLimitLayer {
+    limiter: Arc<RateLimiter>,
+    enabled: bool,
+}
+
+impl RateLimitLayer {
+    pub fn new(limiter: Arc<RateLimiter>, enabled: bool) -> Self {
+        Self { limiter, enabled }
+    }
+}
+
+impl<S> Layer<S> for RateLimitLayer {
+    type Service = RateLimitService<S>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        RateLimitService {
+            inner,
+            limiter: self.limiter.clone(),
+            enabled: self.enabled,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct RateLimitService<S> {
+    inner: S,
+    limiter: Arc<RateLimiter>,
+    enabled: bool,
+}
+
+impl<S> Service<Request> for RateLimitService<S>
+where
+    S: Service<Request, Response = Response> + Clone + Send + 'static,
+    S::Future: Send + 'static,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>> + Send>,
+    >;
+
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: Request) -> Self::Future {
+        if !self.enabled {
+            let fut = self.inner.call(req);
+            return Box::pin(async move { fut.await });
+        }
+
+        let client_id = extract_client_id(&req);
+        let limiter = self.limiter.clone();
+        let mut inner = self.inner.clone();
+
+        Box::pin(async move {
+            if limiter.check_rate_limit(&client_id).await.is_err() {
+                let body = serde_json::json!({
+                    "error": "Rate limit exceeded",
+                    "code": "RATE_LIMITED",
+                    "timestamp": chrono::Utc::now().timestamp(),
+                });
+                let resp = Response::builder()
+                    .status(StatusCode::TOO_MANY_REQUESTS)
+                    .header("Content-Type", "application/json")
+                    .body(Body::from(serde_json::to_string(&body).unwrap()))
+                    .unwrap();
+                return Ok(resp);
+            }
+            inner.call(req).await
+        })
+    }
 }

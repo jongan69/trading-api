@@ -1,0 +1,10 @@
+target/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.env
+*.log
+mcp_test_results.json

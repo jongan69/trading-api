@@ -1,18 +1,15 @@
 use serde_json::Value;
-use reqwest::Client;
 use crate::types::OptionsQuery;
 
 // Get News from Alpaca
 pub async fn get_alpaca_news() -> Result<Value, String> {
     let key = std::env::var("ALPACA_API_KEY_ID")
-        .or_else(|_| std::env::var("ALPACA_API_KEY_ID"))
         .or_else(|_| std::env::var("APCA_API_KEY_ID"))
         .map_err(|_| "ALPACA_API_KEY_ID/APCA_API_KEY_ID missing".to_string())?;
     let secret = std::env::var("ALPACA_API_SECRET_KEY")
-        .or_else(|_| std::env::var("ALPACA_API_SECRET_KEY"))
         .or_else(|_| std::env::var("APCA_API_SECRET_KEY"))
         .map_err(|_| "ALPACA_API_SECRET_KEY/APCA_API_SECRET_KEY missing".to_string())?;
-    let client = Client::new();
+    let client = crate::http::shared_client();
     let resp = client.get("https://data.alpaca.markets/v1beta1/news?sort=desc&limit=50")
         .header("APCA-API-KEY-ID", key)
         .header("APCA-API-SECRET-KEY", secret)
@@ -29,18 +26,16 @@ pub async fn get_alpaca_news() -> Result<Value, String> {
 pub async fn fetch_alpaca_snapshots(symbol: &str, q: &OptionsQuery) -> Result<Value, String> {
     // Accept ALPACA_* or APCA_* (and also ALPCA_* if user typoed in main banner)
     let key = std::env::var("ALPACA_API_KEY_ID")
-        .or_else(|_| std::env::var("ALPACA_API_KEY_ID"))
         .or_else(|_| std::env::var("APCA_API_KEY_ID"))
         .map_err(|_| "ALPACA_API_KEY_ID/APCA_API_KEY_ID missing".to_string())?;
     let secret = std::env::var("ALPACA_API_SECRET_KEY")
-        .or_else(|_| std::env::var("ALPACA_API_SECRET_KEY"))
         .or_else(|_| std::env::var("APCA_API_SECRET_KEY"))
         .map_err(|_| "ALPACA_API_SECRET_KEY/APCA_API_SECRET_KEY missing".to_string())?;
     // helper to perform a single request with an optional feed override
     async fn do_request(symbol: &str, headers: (&str, &str), q: &OptionsQuery, feed_override: Option<&str>) -> Result<Value, String> {
         let (key, secret) = headers;
         // keys intentionally not logged
-        let mut req = Client::new()
+        let mut req = crate::http::shared_client()
             .get(format!("https://data.alpaca.markets/v1beta1/options/snapshots/{symbol}"))
             .header("APCA-API-KEY-ID", key)
             .header("APCA-API-SECRET-KEY", secret)

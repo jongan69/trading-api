@@ -158,15 +158,13 @@ impl HeliusDataSource {
 
     /// Get assets by creator (simplified)
     pub async fn get_assets_by_creator(&self, _creator_address: &str, _limit: Option<u32>) -> Result<Vec<SolanaAsset>, Box<dyn std::error::Error + Send + Sync>> {
-        // Return empty for now due to complex API structure
-        Ok(Vec::new())
+        Err("Not implemented".into())
     }
 
 
     /// Get token accounts by owner (simplified)
     pub async fn get_token_accounts_by_owner(&self, _owner_address: &str, _mint: Option<String>, _limit: Option<u32>) -> Result<Vec<SolanaTokenAccount>, Box<dyn std::error::Error + Send + Sync>> {
-        // Return empty for now since the V2 API types don't exist
-        Ok(Vec::new())
+        Err("Not implemented".into())
     }
 
     /// Search assets with custom criteria
@@ -208,8 +206,7 @@ impl HeliusDataSource {
 
     /// Get transaction signatures for an asset (simplified)
     pub async fn get_signatures_for_asset(&self, _asset_id: &str, _limit: Option<u32>) -> Result<Vec<SolanaTransactionSignature>, Box<dyn std::error::Error + Send + Sync>> {
-        // Return empty for now since GetSignaturesForAsset type doesn't exist
-        Ok(Vec::new())
+        Err("Not implemented".into())
     }
 
     /// Get trending Solana assets based on recent activity
@@ -294,14 +291,12 @@ impl HeliusDataSource {
 
     /// Get program accounts (simplified)
     pub async fn get_program_accounts(&self, _program_id: &str, _limit: Option<u32>) -> Result<Vec<ProgramAccountData>, Box<dyn std::error::Error + Send + Sync>> {
-        // Return empty for now since V2 API types don't exist
-        Ok(Vec::new())
+        Err("Not implemented".into())
     }
 
     /// Get wallet holdings (simplified)
     pub async fn get_wallet_holdings(&self, _wallet_address: &str) -> Result<Vec<TokenHolding>, Box<dyn std::error::Error + Send + Sync>> {
-        // Return empty for now since V2 API types don't exist
-        Ok(Vec::new())
+        Err("Not implemented".into())
     }
 
     /// Parse transactions using Helius Enhanced Transaction API

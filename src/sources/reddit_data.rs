@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use regex::Regex;
 use std::env;
 pub async fn get_reddit_trending_stocks() -> Vec<String> {
-    println!("\n🔍 Scraping Reddit for trending stocks...");
+    tracing::debug!("Scraping Reddit for trending stocks...");
 
     let mut reddit_stocks: HashSet<String> = HashSet::new();
 
@@ -14,7 +14,7 @@ pub async fn get_reddit_trending_stocks() -> Vec<String> {
     // let user_agent = env::var("REDDIT_USER_AGENT").unwrap_or_else(|_| "rust-bot/0.1".to_string());
 
     if client_id.is_empty() || client_secret.is_empty() {
-        println!("  Reddit credentials not found in environment variables. Skipping Reddit scraping.");
+        tracing::info!("Reddit credentials not found — skipping Reddit scraping.");
         return vec![];
     }
 
@@ -39,7 +39,7 @@ pub async fn get_reddit_trending_stocks() -> Vec<String> {
 
     // Loop through subreddits
     for subreddit_name in subreddits {
-        println!("  Scraping r/{subreddit_name}...");
+        tracing::debug!("Scraping r/{subreddit_name}...");
 
         let subreddit = Subreddit::new(subreddit_name);
         match subreddit.hot(20, None).await {
@@ -58,7 +58,7 @@ pub async fn get_reddit_trending_stocks() -> Vec<String> {
                 }
             }
             Err(e) => {
-                println!("  Error scraping r/{subreddit_name}: {e}");
+                tracing::warn!("Error scraping r/{subreddit_name}: {e}");
                 continue;
             }
         }

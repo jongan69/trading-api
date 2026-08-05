@@ -1,6 +1,5 @@
 
-use dotenv::dotenv;
-use reqwest::Client;
+use dotenvy::dotenv;
 use yahoo_finance_api::YahooConnector;
 
 pub use trading_api::state::AppState;
@@ -21,17 +20,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rate_limiter = std::sync::Arc::new(trading_api::middleware::RateLimiter::new(
         trading_api::middleware::RateLimitConfig::default()
     ));
-    let optimized_client = trading_api::optimized_client::OptimizedApiClient::new(cache.clone())
-        .map_err(|e| format!("Failed to create optimized client: {e}"))?;
-    
+
     let state = AppState {
-        http: Client::new(),
+        http: trading_api::http::shared_client().clone(),
         yahoo: std::sync::Arc::new(YahooConnector::new()?),
         concurrency_options: std::sync::Arc::new(tokio::sync::Semaphore::new(16)),
         config: std::sync::Arc::new(config),
         cache: cache.clone(),
         rate_limiter,
-        optimized_client,
     };
 
     let cache_cleanup = cache.clone();
@@ -50,8 +46,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    println!("listening on http://{host}:{port}");
-    axum::serve(listener, app).await?;
+    tracing::info!("listening on http://{host}:{port}");
+    axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>()).await?;
     Ok(())
 }
 // OpenAPI moved to library build_app

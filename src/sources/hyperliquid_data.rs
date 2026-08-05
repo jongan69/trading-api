@@ -107,18 +107,22 @@ impl HyperliquidDataSource {
         match self.info_client.meta().await {
             Ok(meta_response) => {
                 let mut markets = Vec::new();
-                
+                // Fetch mids for real-time pricing
+                let mids: std::collections::HashMap<String, String> = self.info_client.all_mids().await
+                    .unwrap_or_default();
+
                 // The universe field contains all available assets
                 for asset in meta_response.universe {
+                    let mid_price = mids.get(&asset.name).and_then(|p| p.parse::<f64>().ok());
                     let market = HyperliquidMarket {
                         coin: asset.name.clone(),
                         sz_decimals: asset.sz_decimals,
-                        max_leverage: 100, // Default value since not available in SDK
-                        only_isolated: false, // Default value since not available in SDK
-                        name: asset.name,
-                        index_price: 0.0, // Would be populated by separate price calls
-                        mark_price: 0.0,
-                        mid_price: None,
+                        max_leverage: 100,
+                        only_isolated: false,
+                        name: asset.name.clone(),
+                        index_price: mid_price.unwrap_or(0.0),
+                        mark_price: mid_price.unwrap_or(0.0),
+                        mid_price,
                         impact_px: None,
                         funding: None,
                         open_interest: 0.0,
@@ -146,14 +150,7 @@ impl HyperliquidDataSource {
 
     /// Get orderbook for a specific coin
     pub async fn get_orderbook(&self, coin: &str, _depth: Option<u32>) -> Result<HyperliquidOrderbook, Box<dyn std::error::Error + Send + Sync>> {
-        // Note: l2_book method not available in current SDK version
-        // Return empty orderbook as placeholder
-        let orderbook = HyperliquidOrderbook {
-            coin: coin.to_string(),
-            levels: vec![Vec::new(), Vec::new()], // [bids, asks]
-            time: chrono::Utc::now().timestamp() as u64,
-        };
-        Ok(orderbook)
+        Err(format!("Orderbook not implemented for {coin}").into())
     }
 
     /// Get candlestick data
@@ -211,15 +208,12 @@ impl HyperliquidDataSource {
 
     /// Get recent trades for a coin
     pub async fn get_recent_trades(&self, _coin: &str, _limit: Option<u32>) -> Result<Vec<HyperliquidTrade>, Box<dyn std::error::Error + Send + Sync>> {
-        // Note: The SDK might not have a direct trades endpoint in the current version
-        // This would need to be implemented based on the actual SDK capabilities
-        Ok(Vec::new())
+        Err("Recent trades not implemented".into())
     }
 
     /// Get funding rates for all markets
     pub async fn get_funding_rates(&self) -> Result<Vec<HyperliquidFunding>, Box<dyn std::error::Error + Send + Sync>> {
-        // Note: This would need to be implemented based on the actual SDK capabilities
-        Ok(Vec::new())
+        Err("Funding rates not implemented".into())
     }
 
     /// Get trending DeFi assets based on volume and price movement

@@ -1,9 +1,8 @@
 use axum::{http::StatusCode, response::{IntoResponse, Response}, Json};
-use thiserror::Error;
 
 use crate::types::ErrorResponse;
 
-#[derive(Debug, Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ApiError {
     #[error("bad request: {0}")]
     BadRequest(String),
@@ -25,63 +24,53 @@ pub enum ApiError {
     Configuration(String),
     #[error("invalid input: {0}")]
     InvalidInput(String),
+    #[error("not implemented: {0}")]
+    NotImplemented(String),
 }
 
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
+impl ApiError {
+    /// Stable machine-readable error code derived from the variant name.
+    pub fn code(&self) -> &'static str {
         match self {
-            ApiError::BadRequest(msg) => (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
-            ApiError::Upstream(msg) => (
-                StatusCode::BAD_GATEWAY,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
-            ApiError::RateLimit(msg) => (
-                StatusCode::TOO_MANY_REQUESTS,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
-            ApiError::AuthError(msg) => (
-                StatusCode::UNAUTHORIZED,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
-            ApiError::NotFound(msg) => (
-                StatusCode::NOT_FOUND,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
-            ApiError::ValidationError(msg) => (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
-            ApiError::InternalError(msg) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
-            ApiError::External(msg) => (
-                StatusCode::BAD_GATEWAY,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
-            ApiError::Configuration(msg) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
-            ApiError::InvalidInput(msg) => (
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse { error: msg }),
-            )
-                .into_response(),
+            Self::BadRequest(_) => "BAD_REQUEST",
+            Self::Upstream(_) => "UPSTREAM_ERROR",
+            Self::RateLimit(_) => "RATE_LIMITED",
+            Self::AuthError(_) => "UNAUTHORIZED",
+            Self::NotFound(_) => "NOT_FOUND",
+            Self::ValidationError(_) => "VALIDATION_ERROR",
+            Self::InternalError(_) => "INTERNAL_ERROR",
+            Self::External(_) => "EXTERNAL_ERROR",
+            Self::Configuration(_) => "CONFIGURATION_ERROR",
+            Self::InvalidInput(_) => "INVALID_INPUT",
+            Self::NotImplemented(_) => "NOT_IMPLEMENTED",
+        }
+    }
+
+    pub fn status(&self) -> StatusCode {
+        match self {
+            Self::BadRequest(_) | Self::ValidationError(_) | Self::InvalidInput(_) => StatusCode::BAD_REQUEST,
+            Self::Upstream(_) | Self::External(_) => StatusCode::BAD_GATEWAY,
+            Self::RateLimit(_) => StatusCode::TOO_MANY_REQUESTS,
+            Self::AuthError(_) => StatusCode::UNAUTHORIZED,
+            Self::NotFound(_) => StatusCode::NOT_FOUND,
+            Self::InternalError(_) | Self::Configuration(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::NotImplemented(_) => StatusCode::NOT_IMPLEMENTED,
+        }
+    }
+
+    fn to_error_response(&self) -> ErrorResponse {
+        ErrorResponse {
+            error: self.to_string(),
+            code: Some(self.code().to_string()),
+            timestamp: chrono::Utc::now().timestamp(),
         }
     }
 }
 
-
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let status = self.status();
+        let body = self.to_error_response();
+        (status, Json(body)).into_response()
+    }
+}

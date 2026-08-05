@@ -4,7 +4,7 @@ use trading_api::helpers::high_open_interest::get_high_open_interest_contracts_b
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load environment variables
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
 
     println!("=== High Open Interest Contracts Example ===\n");
 

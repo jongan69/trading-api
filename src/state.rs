@@ -5,7 +5,6 @@ use yahoo_finance_api::YahooConnector;
 use crate::config::Config;
 use crate::cache::MemoryCache;
 use crate::middleware::RateLimiter;
-use crate::optimized_client::OptimizedApiClient;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -15,7 +14,6 @@ pub struct AppState {
     pub config: Arc<Config>,
     pub cache: Arc<MemoryCache>,
     pub rate_limiter: Arc<RateLimiter>,
-    pub optimized_client: OptimizedApiClient,
 }
 
 

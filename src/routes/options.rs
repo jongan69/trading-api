@@ -26,7 +26,7 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
     let max_dte = q.max_dte.unwrap_or(60);
     let limit = q.limit.unwrap_or(20);
     let rf_annual = q.rf_annual.unwrap_or(0.03);
-    let debug = q.debug.unwrap_or(true);
+    let debug = q.debug.unwrap_or(false);
 
     let period_label = q.range.as_deref().unwrap_or("3mo");
     let interval = q.interval.as_deref().unwrap_or("1d");
@@ -46,14 +46,14 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
     }
     if debug {
         let uprev: Vec<&String> = user_symbols.iter().take(10).collect();
-        println!("[options] symbols_source={}, user_symbols count={}, preview={:?}", symbols_source, user_symbols.len(), uprev);
+        tracing::debug!("[options] symbols_source={}, user_symbols count={}, preview={:?}", symbols_source, user_symbols.len(), uprev);
     }
 
     let mut symbols: Vec<String> = vec![];
     if symbols_source == "yahoo" || symbols_source == "both" {
         if let Some(qstr) = q.yahoo_search.as_deref() {
             let ylimit = q.yahoo_limit.unwrap_or(25);
-            if debug { println!("[options] yahoo search query='{qstr}' limit={ylimit} "); }
+            if debug { tracing::debug!("[options] yahoo search query='{qstr}' limit={ylimit} "); }
             match state.yahoo.search_ticker(qstr).await {
                 Ok(resp) => {
                     let mut count = 0usize;
@@ -65,10 +65,10 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
                             if count >= ylimit { break; }
                         }
                     }
-                    if debug { println!("[options] yahoo search added {count} symbols"); }
+                    if debug { tracing::debug!("[options] yahoo search added {count} symbols"); }
                 }
                 Err(err) => {
-                    if debug { println!("[options] yahoo search error: {err}"); }
+                    if debug { tracing::debug!("[options] yahoo search error: {err}"); }
                 }
             }
         }
@@ -76,7 +76,7 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
             let list = q.yahoo_list.as_deref().unwrap_or("most_actives");
             let ylimit = q.yahoo_limit.unwrap_or(25);
             let region = q.yahoo_region.as_deref().unwrap_or("US");
-            if debug { println!("[options] yahoo list='{list}' region='{region}' limit={ylimit}"); }
+            if debug { tracing::debug!("[options] yahoo list='{list}' region='{region}' limit={ylimit}"); }
             let fetched = if list.eq_ignore_ascii_case("trending") {
                 sources::yahoo_data::yahoo_trending(region, ylimit).await
             } else {
@@ -90,21 +90,21 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
             };
             match fetched {
                 Ok(mut syms) => {
-                    if debug { println!("[options] yahoo predefined fetched {} symbols", syms.len()); }
+                    if debug { tracing::debug!("[options] yahoo predefined fetched {} symbols", syms.len()); }
                     symbols.append(&mut syms);
                 }
-                Err(err) => { if debug { println!("[options] yahoo predefined error: {err}"); } }
+                Err(err) => { if debug { tracing::debug!("[options] yahoo predefined error: {err}"); } }
             }
         }
         if !user_symbols.is_empty() {
             let before = symbols.len();
             symbols.extend(user_symbols.clone());
-            if debug { println!("[options] appended user-provided yahoo symbols: {} -> {}", before, symbols.len()); }
+            if debug { tracing::debug!("[options] appended user-provided yahoo symbols: {} -> {}", before, symbols.len()); }
         }
         if symbols_source == "yahoo" && symbols.is_empty() {
             return Err(ApiError::BadRequest("symbols_source=yahoo requires yahoo_search or 'symbols'/'symbol' params".to_string()));
         }
-        if debug { println!("[options] yahoo stage symbols count: {}", symbols.len()); }
+        if debug { tracing::debug!("[options] yahoo stage symbols count: {}", symbols.len()); }
     }
 
     if symbols_source == "finviz" || symbols_source == "both" {
@@ -112,21 +112,21 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
         let order = q.order.as_deref().unwrap_or("MarketCap");
         let screener = q.screener.as_deref().unwrap_or("Performance");
         let symbols_limit = q.symbols_limit.unwrap_or(20);
-        if debug { println!("[options] finviz source: signal={signal}, order={order}, screener={screener}, limit={symbols_limit}"); }
+        if debug { tracing::debug!("[options] finviz source: signal={signal}, order={order}, screener={screener}, limit={symbols_limit}"); }
         match sources::finviz_data::fetch_finviz_symbols(signal, order, screener, symbols_limit).await {
             Ok(fetched) => {
                 symbols.extend(fetched);
-                if debug { println!("[options] finviz symbols count: {}", symbols.len()); }
+                if debug { tracing::debug!("[options] finviz symbols count: {}", symbols.len()); }
             }
             Err(err) => {
-                if debug { println!("[options] finviz error: {err}"); }
+                if debug { tracing::debug!("[options] finviz error: {err}"); }
                 return Err(ApiError::Upstream(err));
             }
         }
         if symbols_source == "finviz" {
             let before = symbols.len();
             symbols.extend(user_symbols);
-            if debug { println!("[options] appended user-provided symbols (finviz mode): {} -> {}", before, symbols.len()); }
+            if debug { tracing::debug!("[options] appended user-provided symbols (finviz mode): {} -> {}", before, symbols.len()); }
         }
     }
     {
@@ -134,25 +134,33 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
         let mut seen: HashSet<String> = HashSet::new();
         symbols.retain(|s| seen.insert(s.clone()));
     }
-    if debug { println!("[options] symbols after dedup: {}", symbols.len()); }
+    if debug { tracing::debug!("[options] symbols after dedup: {}", symbols.len()); }
+    // Cap symbols to prevent unbounded upstream fan-out.
+    const MAX_SYMBOLS: usize = 100;
+    if symbols.len() > MAX_SYMBOLS {
+        symbols.truncate(MAX_SYMBOLS);
+    }
     if symbols.is_empty() {
-        if debug { println!("[options] no symbols after sourcing"); }
+        if debug { tracing::debug!("[options] no symbols after sourcing"); }
         return Err(ApiError::BadRequest("no symbols available".to_string()));
     }
     if debug {
         let preview: Vec<&String> = symbols.iter().take(10).collect();
-        println!("[options] symbols ({}): {:?}{}", symbols.len(), preview, if symbols.len() > 10 { " ..." } else { "" });
+        tracing::debug!("[options] symbols ({}): {:?}{}", symbols.len(), preview, if symbols.len() > 10 { " ..." } else { "" });
     }
 
     if let Some(top_n) = q.underlying_top {
-        if debug { println!("[options] underlying_top requested: {top_n}"); }
+        if debug { tracing::debug!("[options] underlying_top requested: {top_n}"); }
         let weights_outer = metrics::CompositeWeights { sharpe: w_sharpe, sortino: w_sortino, calmar: w_calmar };
         let yahoo_outer = state.yahoo.clone();
+        let sem_rank = state.concurrency_options.clone();
         let rank_futs = symbols.iter().cloned().map(move |sym| {
             let period_label = period_label.to_string();
             let weights = weights_outer.clone();
             let yahoo = yahoo_outer.clone();
+            let sem = sem_rank.clone();
             async move {
+                let _permit = sem.acquire().await.unwrap_or_else(|_| unreachable!("semaphore closed"));
                 let prices = match fetch_prices_for_symbol(&yahoo, &sym, &period_label).await { Ok(p) => p, Err(_) => return None };
                 let m = metrics_for_prices(&prices, rf_annual, rf_annual, periods_per_year, Some(weights));
                 Some((sym, m.composite_score))
@@ -162,11 +170,11 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
         scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         if debug {
             let prev: Vec<_> = scored.iter().take(5).map(|(s, sc)| format!("{s}:{sc:.3}")).collect();
-            println!("[options] underlying ranking top5: {prev:?}");
+            tracing::debug!("[options] underlying ranking top5: {prev:?}");
         }
         if scored.len() > top_n { scored.truncate(top_n); }
         symbols = scored.into_iter().map(|(s, _)| s).collect();
-        if debug { println!("[options] symbols after underlying_top {}", symbols.len()); }
+        if debug { tracing::debug!("[options] symbols after underlying_top {}", symbols.len()); }
     }
 
     let min_premium = q.min_premium;
@@ -180,27 +188,30 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
     let max_spread_pct = q.max_spread_pct;
 
     let q_arc = Arc::new(q.clone());
+    let concurrency = state.concurrency_options.clone();
     let tasks = symbols.into_iter().map(|symbol| {
         let side = side.clone();
         let q_local = q_arc.clone();
         let debug_local = debug;
         let yahoo = state.yahoo.clone();
+        let sem = concurrency.clone();
         async move {
-            if debug_local { println!("[options][{symbol}] fetch spot & prices"); }
-            let spot = match latest_close(&yahoo, &symbol).await { Ok(s) => s, Err(e) => { if debug_local { println!("[options][{symbol}] spot error: {e}"); } return Vec::new() } };
-            let prices = match fetch_prices_for_symbol(&yahoo, &symbol, period_label).await { Ok(p) => p, Err(e) => { if debug_local { println!("[options][{symbol}] prices error: {e}"); } return Vec::new() } };
+            let _permit = sem.acquire().await.unwrap_or_else(|_| unreachable!("semaphore closed"));
+            if debug_local { tracing::debug!("[options][{symbol}] fetch spot & prices"); }
+            let spot = match latest_close(&yahoo, &symbol).await { Ok(s) => s, Err(e) => { if debug_local { tracing::debug!("[options][{symbol}] spot error: {e}"); } return Vec::new() } };
+            let prices = match fetch_prices_for_symbol(&yahoo, &symbol, period_label).await { Ok(p) => p, Err(e) => { if debug_local { tracing::debug!("[options][{symbol}] prices error: {e}"); } return Vec::new() } };
             let returns = metrics::compute_returns_from_prices(&prices);
-            if debug_local { println!("[options][{}] spot={}, returns_len={}", symbol, spot, returns.len()); }
+            if debug_local { tracing::debug!("[options][{}] spot={}, returns_len={}", symbol, spot, returns.len()); }
             let under_metrics = metrics_for_prices(&prices, rf_annual, rf_annual, periods_per_year, Some(metrics::CompositeWeights { sharpe: w_sharpe, sortino: w_sortino, calmar: w_calmar }));
             let base_score = under_metrics.composite_score;
-            if debug_local { println!("[options][{symbol}] composite={base_score:.4}"); }
+            if debug_local { tracing::debug!("[options][{symbol}] composite={base_score:.4}"); }
 
             let now_ts = OffsetDateTime::now_utc().unix_timestamp();
             let mut out: Vec<Value> = Vec::new();
-            if debug_local { println!("[options][{symbol}] fetch alpaca snapshots"); }
+            if debug_local { tracing::debug!("[options][{symbol}] fetch alpaca snapshots"); }
             if let Ok(v) = sources::alpaca_data::fetch_alpaca_snapshots(&symbol, &q_local).await {
                 if let Some(snaps) = v.get("snapshots").and_then(|s| s.as_array()) {
-                    if debug_local { println!("[options][{}] snapshots: {}", symbol, snaps.len()); }
+                    if debug_local { tracing::debug!("[options][{}] snapshots: {}", symbol, snaps.len()); }
                     let fmt = format_description!("[year]-[month]-[day]");
                     for s in snaps {
                         let contract_symbol = s.get("symbol").and_then(|v| v.as_str()).unwrap_or("").to_string();
@@ -267,7 +278,7 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
                     }
                 }
             } else {
-                if debug_local { println!("[options][{symbol}] falling back to yahoo options"); }
+                if debug_local { tracing::debug!("[options][{symbol}] falling back to yahoo options"); }
                 if let Ok(chain) = sources::yahoo_data::fetch_yahoo_options_chain(&symbol).await {
                     if let Some(result) = chain.get("optionChain").and_then(|c| c.get("result")).and_then(|r| r.as_array()).and_then(|a| a.first()) {
                         let now_ts = OffsetDateTime::now_utc().unix_timestamp();
@@ -341,7 +352,7 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
                 sb.partial_cmp(&sa).unwrap_or(std::cmp::Ordering::Equal)
             });
             if out.len() > per_symbol_limit { out.truncate(per_symbol_limit); }
-            if debug_local { println!("[options][{}] after per_symbol_limit => {}", symbol, out.len()); }
+            if debug_local { tracing::debug!("[options][{}] after per_symbol_limit => {}", symbol, out.len()); }
             out
         }
     });
@@ -353,7 +364,7 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
         sb.partial_cmp(&sa).unwrap_or(std::cmp::Ordering::Equal)
     });
     options_list.truncate(limit);
-    if debug { println!("[options] total selected: {} (limit {})", options_list.len(), limit); }
+    if debug { tracing::debug!("[options] total selected: {} (limit {})", options_list.len(), limit); }
 
     Ok((StatusCode::OK, Json(json!({ "results": options_list }))))
 }
