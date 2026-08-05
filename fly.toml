@@ -1,0 +1,30 @@
+app = "trading-api"
+primary_region = "lax"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  RUST_LOG = "info"
+  PORT = "3000"
+  HOST = "0.0.0.0"
+  RATE_LIMIT_ENABLED = "true"
+  RATE_LIMIT_REQUESTS_PER_MINUTE = "60"
+
+[mounts]
+  source = "trading_api_data"
+  destination = "/data"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 3000
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
