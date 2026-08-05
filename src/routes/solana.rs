@@ -70,7 +70,7 @@ pub async fn get_asset(
     Path(asset_id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
     let api_key = state.config.helius_api_key.as_deref()
-        .ok_or_else(|| ApiError::InternalError("Helius API key not configured".to_string()))?;
+        .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
     let helius = HeliusDataSource::new_mainnet(api_key)
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -110,7 +110,7 @@ pub async fn get_assets_by_owner(
     Query(query): Query<SolanaQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
     let api_key = state.config.helius_api_key.as_deref()
-        .ok_or_else(|| ApiError::InternalError("Helius API key not configured".to_string()))?;
+        .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
     let helius = HeliusDataSource::new_mainnet(api_key)
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -150,7 +150,7 @@ pub async fn get_assets_by_creator(
     Query(query): Query<SolanaQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
     let api_key = state.config.helius_api_key.as_deref()
-        .ok_or_else(|| ApiError::InternalError("Helius API key not configured".to_string()))?;
+        .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
     let helius = HeliusDataSource::new_mainnet(api_key)
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -186,7 +186,7 @@ pub async fn search_assets(
     Query(query): Query<AssetSearchQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
     let api_key = state.config.helius_api_key.as_deref()
-        .ok_or_else(|| ApiError::InternalError("Helius API key not configured".to_string()))?;
+        .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
     let helius = HeliusDataSource::new_mainnet(api_key)
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -237,7 +237,7 @@ pub async fn get_token_accounts(
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let api_key = state.config.helius_api_key.as_deref()
-        .ok_or_else(|| ApiError::InternalError("Helius API key not configured".to_string()))?;
+        .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
     let helius = HeliusDataSource::new_mainnet(api_key)
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -285,7 +285,7 @@ pub async fn get_asset_signatures(
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let api_key = state.config.helius_api_key.as_deref()
-        .ok_or_else(|| ApiError::InternalError("Helius API key not configured".to_string()))?;
+        .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
     let helius = HeliusDataSource::new_mainnet(api_key)
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -326,7 +326,7 @@ pub async fn get_trending_solana(
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let api_key = state.config.helius_api_key.as_deref()
-        .ok_or_else(|| ApiError::InternalError("Helius API key not configured".to_string()))?;
+        .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
     let helius = HeliusDataSource::new_mainnet(api_key)
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -368,7 +368,7 @@ pub async fn get_wallet_holdings(
     Path(address): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
     let api_key = state.config.helius_api_key.as_deref()
-        .ok_or_else(|| ApiError::InternalError("Helius API key not configured".to_string()))?;
+        .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
     let helius = HeliusDataSource::new_mainnet(api_key)
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -408,7 +408,7 @@ pub async fn get_program_accounts(
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let api_key = state.config.helius_api_key.as_deref()
-        .ok_or_else(|| ApiError::InternalError("Helius API key not configured".to_string()))?;
+        .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
     let helius = HeliusDataSource::new_mainnet(api_key)
         .map_err(|e| ApiError::Upstream(e.to_string()))?;

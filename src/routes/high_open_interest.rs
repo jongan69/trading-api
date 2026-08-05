@@ -1,6 +1,5 @@
 use axum::{
     extract::{Query, Path},
-    http::StatusCode,
     response::Json,
     routing::get,
     Router,
@@ -12,7 +11,6 @@ use crate::types::HighOpenInterestResult;
 
 #[derive(Deserialize, ToSchema, IntoParams)]
 pub struct HighOpenInterestQuery {
-    pub ticker: String,
     pub option_type: Option<String>, // "call" or "put"
 }
 
@@ -40,15 +38,15 @@ pub struct HighOpenInterestResponse {
 pub async fn get_high_open_interest_handler(
     Path(ticker): Path<String>,
     Query(query): Query<HighOpenInterestQuery>,
-) -> Result<Json<HighOpenInterestResponse>, (StatusCode, Json<crate::types::ErrorResponse>)> {
+) -> Result<Json<HighOpenInterestResponse>, crate::errors::ApiError> {
+    // Check Alpaca key is configured before attempting upstream calls
+    if std::env::var("ALPACA_API_KEY_ID").ok().or_else(|| std::env::var("APCA_API_KEY_ID").ok()).is_none() {
+        return Err(crate::errors::ApiError::AuthError("Alpaca API key not configured — set ALPACA_API_KEY_ID".into()));
+    }
+
     let option_type = query.option_type.as_deref();
-    
     let result = get_high_open_interest_contracts(&ticker, option_type).await;
-    
-    Ok(Json(HighOpenInterestResponse {
-        ticker,
-        result,
-    }))
+    Ok(Json(HighOpenInterestResponse { ticker, result }))
 }
 
 /// Get high open interest option contracts for multiple tickers
@@ -68,7 +66,12 @@ pub async fn get_high_open_interest_handler(
 )]
 pub async fn get_high_open_interest_batch_handler(
     Query(query): Query<HighOpenInterestBatchQuery>,
-) -> Result<Json<Vec<HighOpenInterestResponse>>, (StatusCode, Json<crate::types::ErrorResponse>)> {
+) -> Result<Json<Vec<HighOpenInterestResponse>>, crate::errors::ApiError> {
+    // Check Alpaca key
+    if std::env::var("ALPACA_API_KEY_ID").ok().or_else(|| std::env::var("APCA_API_KEY_ID").ok()).is_none() {
+        return Err(crate::errors::ApiError::AuthError("Alpaca API key not configured — set ALPACA_API_KEY_ID".into()));
+    }
+
     let tickers: Vec<String> = query.tickers
         .split(',')
         .map(|s| s.trim().to_string())
@@ -76,14 +79,7 @@ pub async fn get_high_open_interest_batch_handler(
         .collect();
 
     if tickers.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(crate::types::ErrorResponse {
-                error: "No tickers provided".to_string(),
-                code: Some("BAD_REQUEST".into()),
-                timestamp: chrono::Utc::now().timestamp(),
-            }),
-        ));
+        return Err(crate::errors::ApiError::BadRequest("No tickers provided".into()));
     }
 
     let option_type = query.option_type.as_deref();
@@ -91,10 +87,7 @@ pub async fn get_high_open_interest_batch_handler(
 
     for ticker in tickers {
         let result = get_high_open_interest_contracts(&ticker, option_type).await;
-        responses.push(HighOpenInterestResponse {
-            ticker,
-            result,
-        });
+        responses.push(HighOpenInterestResponse { ticker, result });
     }
 
     Ok(Json(responses))
