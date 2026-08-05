@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Trading API Terminal — real-time market data dashboard">
+<title>Trading API Terminal</title>
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js@4.4/dist/chart.umd.min.js" as="script">
+</head>
+<body>
+
+<div id="app">
+  <!-- Top Bar -->
+  <header id="topbar">
+    <div>
+      <span class="brand">▣ TRADING-API</span>
+      <span class="muted" style="margin-left:12px">TERMINAL</span>
+    </div>
+    <div>
+      <span id="status-led" class="status-dot"></span>
+      <span id="status-text" class="muted">connecting...</span>
+      <span class="muted" style="margin-left:16px">API:</span>
+      <span id="api-label" class="api-url">—</span>
+    </div>
+    <div>
+      <span id="clock" class="clock"></span>
+    </div>
+  </header>
+
+  <!-- Left Sidebar — Market Overview -->
+  <aside id="sidebar" class="panel">
+    <div class="section-title">Market Overview</div>
+    <div id="market-tiles"></div>
+    <div class="section-title" style="margin-top:12px">Top Gainers 24h</div>
+    <div id="market-gainers"></div>
+  </aside>
+
+  <!-- Main Content -->
+  <main id="main">
+    <nav id="tabbar">
+      <button data-tab="crypto" class="active">Crypto</button>
+      <button data-tab="stocks">Stocks</button>
+      <button data-tab="options">Options</button>
+      <button data-tab="news">News</button>
+      <button data-tab="forex">Forex</button>
+    </nav>
+    <div id="tab-content" class="panel"></div>
+  </main>
+
+  <!-- Right Sidebar — Watchlist -->
+  <aside id="watchlist" class="panel">
+    <div class="section-title">Watchlist</div>
+    <div class="watch-add">
+      <input type="text" id="watch-input" placeholder="Add symbol..." maxlength="10">
+      <button id="watch-add-btn">+</button>
+    </div>
+    <div id="watch-items"></div>
+    <div class="section-title" style="margin-top:12px">Kraken Ticker</div>
+    <div id="kraken-ticker-mini"></div>
+  </aside>
+
+  <!-- Bottom Ticker Bar -->
+  <footer id="ticker">
+    <div class="ticker-wrap" id="ticker-content"></div>
+  </footer>
+</div>
+
+<div id="disconnected">● API disconnected — retrying...</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4/dist/chart.umd.min.js"></script>
+
+<!-- App -->
+<script type="module" src="js/dashboard.js"></script>
+</body>
+</html>
