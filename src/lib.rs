@@ -24,19 +24,12 @@ use crate::middleware::cors_middleware;
     paths(
         crate::routes::system::health,
         crate::routes::data::news_aggregated,
-        crate::sources::finviz_data::get_forex,
-        crate::sources::finviz_data::get_crypto,
-        crate::sources::finviz_data::get_future,
-        crate::sources::finviz_data::get_insider,
-        crate::sources::finviz_data::get_group,
         crate::routes::data::get_reddit_stocks,
         crate::routes::data::get_trending_stocks,
         crate::routes::data::get_trending_crypto,
         crate::routes::yahoo::get_metrics_yahoo,
         crate::routes::yahoo::get_rank_yahoo,
         crate::routes::yahoo::get_recommendations_yahoo,
-        crate::sources::finviz_data::get_screener_candidates,
-        crate::sources::finviz_data::get_recommendations_finviz,
         crate::routes::options::get_options_recommendations,
         crate::routes::kraken::get_ticker,
         crate::routes::kraken::get_ticker_by_pair,
@@ -74,8 +67,6 @@ use crate::middleware::cors_middleware;
         crate::types::ErrorResponse,
         crate::types::LimitQuery,
         crate::types::YahooQuery,
-        crate::sources::finviz_data::ScreenerQuery,
-        crate::sources::finviz_data::FinvizRecommendationsQuery,
         crate::types::OptionsQuery,
         crate::routes::kraken::KrakenQuery,
         crate::sources::kraken_data::KrakenTicker,
@@ -111,7 +102,7 @@ use crate::middleware::cors_middleware;
     )),
     tags(
         (name = "system", description = "Health & meta"),
-        (name = "data", description = "Aggregated market data from Finviz, Reddit, Yahoo,and Alpaca"),
+        (name = "data", description = "Aggregated market data from Reddit, Yahoo, and Alpaca"),
         (name = "options", description = "Options recommendations"),
         (name = "kraken", description = "Kraken cryptocurrency exchange data"),
         (name = "CoinGecko", description = "CoinGecko cryptocurrency data"),
@@ -184,8 +175,6 @@ pub fn build_app(state: state::AppState) -> Router {
         .nest("/solana", routes::solana::router(state.clone()))
         .nest("/hyperliquid", routes::hyperliquid::router(state.clone()))
         .nest("/pumpfun", routes::pumpfun::router(state))
-        .route("/screener/candidates", axum::routing::get(crate::sources::finviz_data::get_screener_candidates))
-        .route("/recommendations/finviz", axum::routing::get(crate::sources::finviz_data::get_recommendations_finviz))
         .merge(SwaggerUi::new("/docs").url("/openapi.json", openapi))
         .fallback(not_found_handler)
         .layer(rate_limit_layer)

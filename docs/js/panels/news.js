@@ -18,7 +18,7 @@ export async function renderNews() {
 }
 
 function renderSourceTabs() {
-  const sources = ['all', 'finviz', 'reddit', 'alpaca'];
+  const sources = ['all', 'reddit', 'alpaca'];
   return `<div class="news-source-tabs">
     ${sources.map(s => `<button class="${s === currentSource ? 'active' : ''}" data-source="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}</button>`).join('')}
   </div>`;
@@ -41,15 +41,6 @@ function filterNews() {
   });
 
   const items = [];
-
-  if (currentSource === 'all' || currentSource === 'finviz') {
-    const finviz = allNews.finviz;
-    const blogs = finviz?.blogs || [];
-    const fnews = finviz?.news || [];
-    [...fnews, ...blogs].forEach(item => {
-      items.push({ source: 'Finviz', headline: item.title || item.headline || '—', url: item.url || '#', time: item.date || '' });
-    });
-  }
 
   if (currentSource === 'all' || currentSource === 'reddit') {
     const reddit = allNews.reddit || {};

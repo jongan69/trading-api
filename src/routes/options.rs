@@ -107,28 +107,6 @@ pub async fn get_options_recommendations(axum::extract::State(state): axum::extr
         if debug { tracing::debug!("[options] yahoo stage symbols count: {}", symbols.len()); }
     }
 
-    if symbols_source == "finviz" || symbols_source == "both" {
-        let signal = q.signal.as_deref().unwrap_or("TopGainers");
-        let order = q.order.as_deref().unwrap_or("MarketCap");
-        let screener = q.screener.as_deref().unwrap_or("Performance");
-        let symbols_limit = q.symbols_limit.unwrap_or(20);
-        if debug { tracing::debug!("[options] finviz source: signal={signal}, order={order}, screener={screener}, limit={symbols_limit}"); }
-        match sources::finviz_data::fetch_finviz_symbols(signal, order, screener, symbols_limit).await {
-            Ok(fetched) => {
-                symbols.extend(fetched);
-                if debug { tracing::debug!("[options] finviz symbols count: {}", symbols.len()); }
-            }
-            Err(err) => {
-                if debug { tracing::debug!("[options] finviz error: {err}"); }
-                return Err(ApiError::Upstream(err));
-            }
-        }
-        if symbols_source == "finviz" {
-            let before = symbols.len();
-            symbols.extend(user_symbols);
-            if debug { tracing::debug!("[options] appended user-provided symbols (finviz mode): {} -> {}", before, symbols.len()); }
-        }
-    }
     {
         use std::collections::HashSet;
         let mut seen: HashSet<String> = HashSet::new();

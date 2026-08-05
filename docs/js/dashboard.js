@@ -6,14 +6,12 @@ import { renderCrypto } from './panels/crypto.js';
 import { renderStocks } from './panels/stocks.js';
 import { renderOptions } from './panels/options.js';
 import { renderNews } from './panels/news.js';
-import { renderForex } from './panels/forex.js';
 
 const panels = {
   crypto:  { render: renderCrypto,  interval: 30_000 },
   stocks:  { render: renderStocks,  interval: 60_000 },
   options: { render: renderOptions, interval: 60_000 },
   news:    { render: renderNews,    interval: 60_000 },
-  forex:   { render: renderForex,   interval: 30_000 },
 };
 
 let currentTab = 'crypto';
@@ -47,7 +45,7 @@ async function init() {
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
-    const keys = { '1':'crypto','2':'stocks','3':'options','4':'news','5':'forex' };
+    const keys = { '1':'crypto','2':'stocks','3':'options','4':'news' };
     if (keys[e.key]) switchTab(keys[e.key]);
     if (e.key === 'r' || e.key === 'R') refreshCurrent();
   });

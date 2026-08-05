@@ -5,18 +5,24 @@ export async function renderStocks() {
   container.innerHTML = '<div class="loading">Loading stock data...</div>';
 
   try {
-    const [trending, groups] = await Promise.all([
-      API.getTrendingStocks(25),
-      API.getGroup(25),
-    ]);
-
+    const trending = await API.getTrendingStocks(50);
     const symbols = API.unwrapData(trending) || [];
-    const groupData = API.unwrapData(groups) || [];
 
     let html = '<div class="section-title">Trending Tickers</div>';
     html += renderTrendingGrid(symbols);
-    html += '<div class="section-title" style="margin-top:16px">Industry Groups</div>';
-    html += renderGroupTable(groupData);
+
+    // Try Yahoo rankings if symbols are available
+    if (symbols.length) {
+      try {
+        const top = symbols.slice(0, 10).join(',');
+        const rankResp = await API.getYahooRank(top, '1mo', '1d');
+        const results = API.unwrapData(rankResp) || [];
+        if (results.length) {
+          html += '<div class="section-title" style="margin-top:16px">Yahoo Rankings (Top 10)</div>';
+          html += renderRankTable(results);
+        }
+      } catch { /* Yahoo may be unavailable, skip */ }
+    }
 
     container.innerHTML = html;
   } catch (err) {
@@ -31,22 +37,24 @@ function renderTrendingGrid(symbols) {
   </div>`;
 }
 
-function renderGroupTable(groups) {
-  if (!groups.length) return '<div class="empty muted">No group data</div>';
-
-  // Finviz returns header→string maps; extract keys from first row
-  const headers = Object.keys(groups[0] || {});
-  const interesting = headers.filter(h =>
-    /name|market cap|p\/e|change|volume|performance/i.test(h)
-  );
-
+function renderRankTable(results) {
   return `<table class="table-terminal">
-    <thead><tr>${interesting.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-    <tbody>${groups.map(row => `<tr>${interesting.map(h => {
-      const val = row[h] || '—';
-      const cls = (typeof val === 'string' && val.includes('%') && !val.startsWith('-'))
-        ? 'up' : (typeof val === 'string' && val.startsWith('-') ? 'down' : '');
-      return `<td class="num ${cls}">${val}</td>`;
-    }).join('')}</tr>`).join('')}</tbody>
+    <thead><tr><th>Symbol</th><th class="num">Sharpe</th><th class="num">Sortino</th><th class="num">Calmar</th><th class="num">Vol</th><th class="num">Score</th></tr></thead>
+    <tbody>${results.map(r => {
+      const m = r.metrics || {};
+      const score = m.composite_score || 0;
+      const scorePct = Math.min(Math.max(score * 100, 0), 100);
+      return `<tr>
+        <td class="accent">${r.symbol || '—'}</td>
+        <td class="num">${(m.sharpe || 0).toFixed(2)}</td>
+        <td class="num">${(m.sortino || 0).toFixed(2)}</td>
+        <td class="num">${(m.calmar || 0).toFixed(2)}</td>
+        <td class="num">${API.fmtPct(m.volatility)}</td>
+        <td class="num">
+          <span class="score-bar"><span class="score-bar-fill" style="width:${scorePct}%"></span></span>
+          ${score.toFixed(3)}
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
   </table>`;
 }

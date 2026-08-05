@@ -1,5 +1,4 @@
 use crate::sources::alpaca_data::get_alpaca_news;
-use crate::sources::finviz_data::fetch_finviz_news;
 use crate::sources::reddit_data::get_reddit_news;
 use serde_json::{json, Value};
 use tokio::time::{timeout, Duration};
@@ -52,48 +51,25 @@ static NEWS_CACHE: std::sync::LazyLock<Arc<Mutex<NewsCache>>> = std::sync::LazyL
 });
 
 pub async fn get_news() -> Result<Value, String> {
-    // Configure timeouts per service (some services might be slower than others)
-    let finviz_timeout = Duration::from_secs(10);  // Finviz can be slow due to scraping
-    let reddit_timeout = Duration::from_secs(12);  // Reddit API can be slow
-    let alpaca_timeout = Duration::from_secs(8);   // Alpaca is usually fast
-    
-    // Execute all three API calls in parallel with individual timeouts
-    let (finviz_result, reddit_result, alpaca_result) = tokio::try_join!(
-        timeout(finviz_timeout, fetch_finviz_news(None)),
+    let reddit_timeout = Duration::from_secs(12);
+    let alpaca_timeout = Duration::from_secs(8);
+
+    let (reddit_result, alpaca_result) = tokio::try_join!(
         timeout(reddit_timeout, get_reddit_news()),
         timeout(alpaca_timeout, get_alpaca_news())
     ).map_err(|e| format!("Failed to execute news requests: {e}"))?;
 
-    // Handle individual results with specific error handling
-    let finviz_news = match finviz_result {
-        Ok(result) => result,
-        Err(e) => {
-            eprintln!("Finviz news error: {e}");
-            Value::Null
-        }
-    };
-
     let reddit_news = match reddit_result {
         Ok(result) => result,
-        Err(e) => {
-            eprintln!("Reddit news error: {e}");
-            Value::Null
-        }
+        Err(_) => Value::Null,
     };
 
     let alpaca_news = match alpaca_result {
         Ok(result) => result,
-        Err(e) => {
-            eprintln!("Alpaca news error: {e}");
-            Value::Null
-        }
+        Err(_) => Value::Null,
     };
 
-    Ok(json!({ 
-        "finviz": finviz_news, 
-        "reddit": reddit_news, 
-        "alpaca": alpaca_news 
-    }))
+    Ok(json!({ "reddit": reddit_news, "alpaca": alpaca_news }))
 }
 
 // Cached version that avoids redundant API calls.

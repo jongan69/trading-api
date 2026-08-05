@@ -11,17 +11,12 @@ use crate::helpers::trending_cryptos;
 pub fn router(_state: AppState) -> Router {
     Router::new()
         .route("/news", get(news_aggregated))
-        .route("/forex", get(sources::finviz_data::get_forex))
-        .route("/crypto", get(sources::finviz_data::get_crypto))
-        .route("/future", get(sources::finviz_data::get_future))
-        .route("/insider", get(sources::finviz_data::get_insider))
-        .route("/group", get(sources::finviz_data::get_group))
         .route("/reddit/stocks", get(get_reddit_stocks))
         .route("/trending/stocks", get(get_trending_stocks))
         .route("/trending/crypto", get(get_trending_crypto))
 }
 
-#[utoipa::path(get, path = "/news", tag = "data", responses((status = 200, description = "Aggregated news from Finviz, Reddit, and Alpaca")))]
+#[utoipa::path(get, path = "/news", tag = "data", responses((status = 200, description = "Aggregated news from Reddit and Alpaca")))]
 pub async fn news_aggregated() -> Result<impl IntoResponse, ApiError> {
     let v = helpers::news::get_news_cached().await.map_err(ApiError::Upstream)?;
     Ok((StatusCode::OK, Json(v)))

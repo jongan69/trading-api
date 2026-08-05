@@ -11,11 +11,6 @@ use crate::types::OptionContract;
 pub async fn get_trending_tickers() -> Vec<String> {
     let mut all_tickers = Vec::new();
     
-    // Get trending stocks from finviz
-    if let Ok(finviz_tickers) = sources::finviz_data::fetch_finviz_symbols("TopGainers", "MarketCap", "Performance", 20).await {
-        all_tickers.extend(finviz_tickers);
-    }
-    
     // Get trending stocks from yahoo
     if let Ok(yahoo_tickers) = sources::yahoo_data::yahoo_trending("US", 20).await {
         all_tickers.extend(yahoo_tickers);
