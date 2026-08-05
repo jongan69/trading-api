@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: trading-api
+    runtime: docker
+    repo: https://github.com/jongan69/trading-api
+    branch: main
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: RUST_LOG
+        value: info
+      - key: PORT
+        value: "3000"
+      - key: HOST
+        value: 0.0.0.0
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+      - key: RATE_LIMIT_REQUESTS_PER_MINUTE
+        value: "60"
+      - key: ALPACA_API_KEY_ID
+        sync: false
+      - key: ALPACA_API_SECRET_KEY
+        sync: false
+      - key: HELIUS_API_KEY
+        sync: false
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: REDDIT_USERNAME
+        sync: false
+      - key: REDDIT_PASSWORD
+        sync: false
