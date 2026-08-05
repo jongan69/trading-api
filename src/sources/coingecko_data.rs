@@ -468,40 +468,74 @@ impl CoinGeckoClient {
     }
 }
 
+// ── Simple in-memory cache to avoid CoinGecko free-tier rate limits ──
+static CG_CACHE: std::sync::LazyLock<std::sync::Mutex<std::collections::HashMap<String, (i64, String)>>> =
+    std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
+
+fn cache_get(key: &str) -> Option<String> {
+    let cache = CG_CACHE.lock().unwrap();
+    cache.get(key).and_then(|(ts, val)| {
+        if chrono::Utc::now().timestamp() - ts < 120 { Some(val.clone()) } else { None }
+    })
+}
+
+fn cache_set(key: &str, val: String) {
+    let mut cache = CG_CACHE.lock().unwrap();
+    cache.insert(key.to_string(), (chrono::Utc::now().timestamp(), val));
+}
+
+async fn cached_or_fetch<T: Serialize + serde::de::DeserializeOwned>(
+    key: &str, fetch: impl std::future::Future<Output = Result<T, String>>,
+) -> Result<T, String> {
+    if let Some(cached) = cache_get(key) {
+        if let Ok(val) = serde_json::from_str(&cached) {
+            return Ok(val);
+        }
+    }
+    let result = fetch.await?;
+    if let Ok(json) = serde_json::to_string(&result) {
+        cache_set(key, json);
+    }
+    Ok(result)
+}
+
 // Convenience functions for easy access
 pub async fn get_top_coins(limit: usize) -> Result<Vec<CoinGeckoCoin>, String> {
+    let key = format!("top_coins_{limit}");
     let client = CoinGeckoClient::new();
-    client.get_top_coins(limit).await
+    cached_or_fetch(&key, client.get_top_coins(limit)).await
 }
 
 pub async fn get_top_gainers(limit: usize) -> Result<Vec<CoinGeckoCoin>, String> {
+    let key = format!("top_gainers_{limit}");
     let client = CoinGeckoClient::new();
-    client.get_top_gainers(limit).await
+    cached_or_fetch(&key, client.get_top_gainers(limit)).await
 }
 
 pub async fn get_top_losers(limit: usize) -> Result<Vec<CoinGeckoCoin>, String> {
+    let key = format!("top_losers_{limit}");
     let client = CoinGeckoClient::new();
-    client.get_top_losers(limit).await
+    cached_or_fetch(&key, client.get_top_losers(limit)).await
 }
 
 pub async fn get_trending_coins() -> Result<Vec<TrendingItem>, String> {
-    let client = CoinGeckoClient::new();
-    client.get_trending_coins().await
+    let key = "trending_coins".to_string();
+    cached_or_fetch(&key, CoinGeckoClient::new().get_trending_coins()).await
 }
 
 pub async fn get_market_overview() -> Result<MarketOverview, String> {
-    let client = CoinGeckoClient::new();
-    client.get_market_overview().await
+    let key = "market_overview".to_string();
+    cached_or_fetch(&key, CoinGeckoClient::new().get_market_overview()).await
 }
 
 pub async fn get_market_context() -> Result<String, String> {
-    let client = CoinGeckoClient::new();
-    client.get_market_context().await
+    let key = "market_context".to_string();
+    cached_or_fetch(&key, CoinGeckoClient::new().get_market_context()).await
 }
 
 pub async fn get_trending_cryptos() -> Result<Vec<String>, String> {
-    let client = CoinGeckoClient::new();
-    client.get_trending_cryptos().await
+    let key = "trending_cryptos".to_string();
+    cached_or_fetch(&key, CoinGeckoClient::new().get_trending_cryptos()).await
 }
 
 pub async fn get_simple_price(
@@ -509,8 +543,9 @@ pub async fn get_simple_price(
     vs_currencies: &[String],
     include_24hr_change: bool,
 ) -> Result<Value, String> {
+    let key = format!("simple_price_{}_{}_{}", ids.join(","), vs_currencies.join(","), include_24hr_change);
     let client = CoinGeckoClient::new();
-    client.get_simple_price(ids, vs_currencies, include_24hr_change).await
+    cached_or_fetch(&key, client.get_simple_price(ids, vs_currencies, include_24hr_change)).await
 }
 
 #[cfg(test)]

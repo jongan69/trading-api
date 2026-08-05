@@ -132,7 +132,7 @@ pub async fn get_future(Query(query): Query<LimitQuery>) -> Result<impl IntoResp
             let data = map_rows_to_objects(headers, rows, limit);
             Ok((StatusCode::OK, Json(json!({ "data": data }))))
         }
-        Err(err) => Err(ApiError::Upstream(format!("failed to fetch future: {err}"))),
+        Err(_) => Err(ApiError::Upstream("Futures data temporarily unavailable — upstream Finviz layout may have changed".into())),
     }
 }
 
@@ -238,11 +238,14 @@ pub async fn get_screener_candidates(Query(q): Query<ScreenerQuery>) -> impl Int
                 .collect();
             (StatusCode::OK, Json(json!({ "symbols": symbols })) ).into_response()
         }
-        Err(err) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-                Json(crate::types::ErrorResponse { error: format!("failed to scrape finviz screener: {err}"), code: Some("UPSTREAM_ERROR".into()), timestamp: chrono::Utc::now().timestamp() }),
-        )
-            .into_response(),
+        Err(_err) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(crate::types::ErrorResponse {
+                error: "Finviz screener temporarily unavailable — upstream HTML layout may have changed".into(),
+                code: Some("UPSTREAM_UNAVAILABLE".into()),
+                timestamp: chrono::Utc::now().timestamp(),
+            }),
+        ).into_response(),
     }
 }
 
