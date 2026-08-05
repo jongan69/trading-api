@@ -147,21 +147,23 @@ pub async fn readiness_check(
     
     let mut checks = Vec::new();
     
-    // Check Alpaca API
-    let alpaca_status = check_alpaca_service(&state).await;
-    checks.push(("alpaca", alpaca_status.status == "healthy"));
-    
-    // Check Yahoo Finance API
+    // Check Alpaca API (skip if not configured)
+    if !state.config.alpaca.api_key.is_empty() {
+        let alpaca_status = check_alpaca_service(&state).await;
+        checks.push(("alpaca", alpaca_status.status == "healthy"));
+    }
+
+    // Check Yahoo Finance API (always available — no key needed)
     let yahoo_status = check_yahoo_service(&state).await;
     checks.push(("yahoo_finance", yahoo_status.status == "healthy"));
-    
-    // Check if all critical services are healthy
-    let all_healthy = checks.iter().all(|(_, healthy)| *healthy);
-    
+
+    // Ready if all *configured* checks pass
+    let all_healthy = checks.is_empty() || checks.iter().all(|(_, healthy)| *healthy);
+
     if all_healthy {
         Ok((StatusCode::OK, Json(json!({"status": "ready"}))))
     } else {
-        Err(ApiError::InternalError("Service not ready".to_string()))
+        Err(ApiError::InternalError("Service not ready — external dependency failing".to_string()))
     }
 }
 
