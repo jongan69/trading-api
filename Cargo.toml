@@ -30,7 +30,6 @@ tower = "0.5"
 tower-http = { version = "0.6", features = ["trace"] }
 krakenrs = "6.2.0"
 chrono = { version = "0.4.42", features = ["serde"] }
-helius = "0.3.1"
 hyperliquid_rust_sdk = "0.6.0"
 
 [dev-dependencies]

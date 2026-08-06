@@ -72,8 +72,7 @@ pub async fn get_asset(
     let api_key = state.config.helius_api_key.as_deref()
         .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
-    let helius = HeliusDataSource::new_mainnet(api_key)
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let helius = HeliusDataSource::new_mainnet(api_key);
     
     let asset = helius.get_asset(&asset_id).await
         .unwrap_or(None); // degrade gracefully on SDK errors
@@ -112,8 +111,7 @@ pub async fn get_assets_by_owner(
     let api_key = state.config.helius_api_key.as_deref()
         .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
-    let helius = HeliusDataSource::new_mainnet(api_key)
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let helius = HeliusDataSource::new_mainnet(api_key);
     
     let assets = helius.get_assets_by_owner(&owner, query.limit).await
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -152,8 +150,7 @@ pub async fn get_assets_by_creator(
     let api_key = state.config.helius_api_key.as_deref()
         .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
-    let helius = HeliusDataSource::new_mainnet(api_key)
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let helius = HeliusDataSource::new_mainnet(api_key);
     
     let assets = helius.get_assets_by_creator(&creator, query.limit).await
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -188,8 +185,7 @@ pub async fn search_assets(
     let api_key = state.config.helius_api_key.as_deref()
         .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
-    let helius = HeliusDataSource::new_mainnet(api_key)
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let helius = HeliusDataSource::new_mainnet(api_key);
     
     // Build search criteria
     let mut search_criteria = std::collections::HashMap::new();
@@ -239,8 +235,7 @@ pub async fn get_token_accounts(
     let api_key = state.config.helius_api_key.as_deref()
         .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
-    let helius = HeliusDataSource::new_mainnet(api_key)
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let helius = HeliusDataSource::new_mainnet(api_key);
     
     let mint = params.get("mint").cloned();
     let owner = params.get("owner");
@@ -287,8 +282,7 @@ pub async fn get_asset_signatures(
     let api_key = state.config.helius_api_key.as_deref()
         .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
-    let helius = HeliusDataSource::new_mainnet(api_key)
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let helius = HeliusDataSource::new_mainnet(api_key);
     
     let limit = params.get("limit")
         .and_then(|l| l.parse::<u32>().ok());
@@ -328,8 +322,7 @@ pub async fn get_trending_solana(
     let api_key = state.config.helius_api_key.as_deref()
         .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
-    let helius = HeliusDataSource::new_mainnet(api_key)
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let helius = HeliusDataSource::new_mainnet(api_key);
     
     let limit = params.get("limit")
         .and_then(|l| l.parse::<usize>().ok())
@@ -370,8 +363,7 @@ pub async fn get_wallet_holdings(
     let api_key = state.config.helius_api_key.as_deref()
         .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
-    let helius = HeliusDataSource::new_mainnet(api_key)
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let helius = HeliusDataSource::new_mainnet(api_key);
     
     let holdings = helius.get_wallet_holdings(&address).await
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
@@ -410,8 +402,7 @@ pub async fn get_program_accounts(
     let api_key = state.config.helius_api_key.as_deref()
         .ok_or_else(|| ApiError::AuthError("Helius API key not configured".to_string()))?;
     
-    let helius = HeliusDataSource::new_mainnet(api_key)
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+    let helius = HeliusDataSource::new_mainnet(api_key);
     
     let limit = params.get("limit")
         .and_then(|l| l.parse::<u32>().ok());
