@@ -45,7 +45,10 @@ function filterNews() {
   if (currentSource === 'all' || currentSource === 'reddit') {
     const reddit = allNews.reddit || {};
     ['wallstreetbets', 'stocks', 'investing'].forEach(sub => {
-      (reddit[sub] || []).forEach(post => {
+      const subData = reddit[sub];
+      // Reddit source returns either an array of posts, or an {error} object if unconfigured
+      const posts = Array.isArray(subData) ? subData : [];
+      posts.forEach(post => {
         items.push({
           source: `r/${sub}`,
           headline: post.title || '—',
@@ -59,7 +62,8 @@ function filterNews() {
 
   if (currentSource === 'all' || currentSource === 'alpaca') {
     const alpaca = allNews.alpaca;
-    const anews = alpaca?.news || [];
+    // Alpaca returns {news: [...]} when configured, or null when not
+    const anews = Array.isArray(alpaca?.news) ? alpaca.news : [];
     anews.forEach(item => {
       items.push({
         source: 'Alpaca',
