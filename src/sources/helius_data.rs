@@ -285,7 +285,10 @@ impl HeliusDataSource {
                 
                 Ok(trending_items)
             }
-            Err(e) => Err(format!("Failed to get trending Solana assets: {e}").into()),
+            Err(e) => {
+                tracing::warn!("Helius trending search unavailable: {e}");
+                Ok(Vec::new())
+            }
         }
     }
 

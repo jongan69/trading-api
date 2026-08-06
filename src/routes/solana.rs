@@ -76,7 +76,7 @@ pub async fn get_asset(
         .map_err(|e| ApiError::Upstream(e.to_string()))?;
     
     let asset = helius.get_asset(&asset_id).await
-        .map_err(|e| ApiError::Upstream(e.to_string()))?;
+        .unwrap_or(None); // degrade gracefully on SDK errors
     
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
