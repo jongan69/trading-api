@@ -302,6 +302,19 @@ pub async fn get_market_stats(limit: usize) -> Result<SolanaMarketStats, String>
     })
 }
 
+/// Get pump.fun tokens from DexScreener (filtered by dexId).
+pub async fn get_pumpfun_tokens(limit: usize) -> Result<Vec<SolanaTokenPair>, String> {
+    // Search broadly and filter for pump.fun / pumpswap
+    let pairs = dex_fetch("/latest/dex/search?q=SOL").await?;
+    let mut pump: Vec<SolanaTokenPair> = pairs.iter()
+        .filter(|p| p.chainId == "solana" && (p.dexId == "pumpfun" || p.dexId == "pumpswap"))
+        .map(|p| pair_to_token_pair(p))
+        .collect();
+    pump.sort_by(|a, b| b.volume_24h.unwrap_or(0.0).partial_cmp(&a.volume_24h.unwrap_or(0.0)).unwrap_or(std::cmp::Ordering::Equal));
+    pump.truncate(limit);
+    Ok(pump)
+}
+
 /// Get token profile from DexScreener (icon, description, social links).
 pub async fn get_token_profile(token_address: &str) -> Result<Option<TokenProfileInfo>, String> {
     let url = format!("{DEX_BASE}/token-profiles/latest/v1");

@@ -94,11 +94,8 @@ use crate::middleware::cors_middleware;
         crate::routes::trending_options::TrendingOptionsResponse,
         crate::routes::trending_options::TrendingOptionsSummary,
         crate::routes::pumpfun::PumpFunQuery,
-        crate::routes::pumpfun::PumpFunResponse<crate::routes::pumpfun::PumpFunTrendingResponse>,
         crate::routes::pumpfun::PumpFunTrendingResponse,
-        crate::routes::pumpfun::PumpFunMarketSummary,
-        crate::sources::pumpfun_data::TokenInfo,
-        crate::sources::pumpfun_data::BondingCurveInfo,
+        crate::sources::dexscreener_data::SolanaTokenPair,
     )),
     tags(
         (name = "system", description = "Health & meta"),
@@ -108,7 +105,7 @@ use crate::middleware::cors_middleware;
         (name = "CoinGecko", description = "CoinGecko cryptocurrency data"),
         (name = "high-open-interest", description = "High open interest option contracts from Alpaca"),
         (name = "trending-options", description = "Trending tickers with undervalued options analysis"),
-        (name = "pumpfun", description = "Pump.fun meme token data and trending assets")
+        (name = "pumpfun", description = "Pump.fun meme tokens — data from DexScreener")
     )
 )]
 struct ApiDoc;
@@ -175,7 +172,7 @@ pub fn build_app(state: state::AppState) -> Router {
         .nest("/solana", routes::solana::router(state.clone()))
         .merge(routes::solana_dex::router())
         .nest("/hyperliquid", routes::hyperliquid::router(state.clone()))
-        .nest("/pumpfun", routes::pumpfun::router(state))
+        .nest("/pumpfun", routes::pumpfun::router())
         .merge(SwaggerUi::new("/docs").url("/openapi.json", openapi))
         .fallback(not_found_handler)
         .layer(rate_limit_layer)
