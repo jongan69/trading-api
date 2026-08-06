@@ -173,6 +173,7 @@ pub fn build_app(state: state::AppState) -> Router {
         .nest("/kraken", routes::kraken::router(state.clone()))
         .nest("/coingecko", routes::coingecko::coingecko_routes())
         .nest("/solana", routes::solana::router(state.clone()))
+        .merge(routes::solana_dex::router())
         .nest("/hyperliquid", routes::hyperliquid::router(state.clone()))
         .nest("/pumpfun", routes::pumpfun::router(state))
         .merge(SwaggerUi::new("/docs").url("/openapi.json", openapi))
